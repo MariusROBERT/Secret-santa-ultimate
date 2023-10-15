@@ -7,10 +7,10 @@ export class UserEntity {
   id: number;
 
   @Column()
-  username: string;
+  name: string;
 
   @Column()
-  email: string;
+  mail: string;
 
   @ManyToOne(()=> SecretSantaEntity, (secretsanta) => secretsanta.users)
   @JoinTable()
