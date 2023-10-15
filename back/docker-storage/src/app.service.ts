@@ -18,10 +18,10 @@ export interface NewUser {
 @Injectable()
 export class AppService {
   constructor(
-    @InjectRepository(UserEntity)
-    private userRepository: Repository<UserEntity>,
-    @InjectRepository(SecretSantaEntity)
-    private secretSantaRepository: Repository<SecretSantaEntity>
+      @InjectRepository(UserEntity)
+      private userRepository: Repository<UserEntity>,
+      @InjectRepository(SecretSantaEntity)
+      private secretSantaRepository: Repository<SecretSantaEntity>
   ) {
   }
 
@@ -50,9 +50,9 @@ export class AppService {
     do {
       code = this.generateCode();
       checkCode = await this.secretSantaRepository
-        .createQueryBuilder('secretsanta')
-        .where('secretsanta.code = :code', {code: newSecretSanta.code})
-        .getOne();
+          .createQueryBuilder('secretsanta')
+          .where('secretsanta.code = :code', {code: newSecretSanta.code})
+          .getOne();
     } while (checkCode);
 
     newSecretSanta.code = code;
@@ -70,10 +70,10 @@ export class AppService {
     if (!code || code === '')
       throw new BadRequestException('Missing code');
     return this.secretSantaRepository
-      .createQueryBuilder('secretsanta')
-      .leftJoinAndSelect('secretsanta.users', 'users')
-      .where('secretsanta.code = :code', {code})
-      .getOne();
+        .createQueryBuilder('secretsanta')
+        .leftJoinAndSelect('secretsanta.users', 'users')
+        .where('secretsanta.code = :code', {code})
+        .getOne();
   }
 
   async addUser(code: string, data: NewUser) {
@@ -83,14 +83,15 @@ export class AppService {
       throw new BadRequestException('Missing data');
 
     const secretSanta = await this.secretSantaRepository
-      .createQueryBuilder('secretsanta')
-      .where('secretsanta.code = :code', {code})
-      .leftJoinAndSelect('secretsanta.users', 'users')
-      .getOne();
+        .createQueryBuilder('secretsanta')
+        .where('secretsanta.code = :code', {code})
+        .leftJoinAndSelect('secretsanta.users', 'users')
+        .getOne();
     if (!secretSanta)
       throw new BadRequestException('Invalid code');
 
-    if (secretSanta.users.find(user => user.mail === data.mail))
+    if (secretSanta.users.find(user => user.mail === data.mail)
+        || secretSanta.users.find(user => user.name === data.name))
       throw new BadRequestException('User already exists');
 
     const user = await this.userRepository.create();
@@ -104,9 +105,50 @@ export class AppService {
       return response.status(501).send('Error while creating user');
     }
     return {
-      name: secretSanta.name,
-      mailDate: secretSanta.mailDate,
       users: secretSanta.users.concat([user]),
     };
+  }
+
+  async addForbidden(code: string, data: { id: number, forbidden: number[] }) {
+    if (!data.id || !data.forbidden || !code || code === '')
+      throw new BadRequestException('Missing data');
+    const secretSanta = await this.secretSantaRepository
+        .createQueryBuilder('secretsanta')
+        .where('secretsanta.code = :code', {code})
+        .leftJoinAndSelect('secretsanta.users', 'users')
+        .getOne();
+    if (!secretSanta)
+      throw new BadRequestException('Invalid code');
+    const user = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.id = :id', {id: data.id})
+        .getOne();
+    if (!user)
+      throw new BadRequestException('Invalid user');
+
+    // Check if all forbidden users are in the secret santa
+    for (const forbidden of data.forbidden) {
+      if (!secretSanta.users.find(u => u.id === forbidden))
+        throw new BadRequestException('Invalid forbidden user');
+    }
+
+    // Check if the user is in the secret santa
+    if (!secretSanta.users.find(u => u.id === data.id))
+      throw new BadRequestException('Invalid user');
+
+    // Add forbidden users to the user forbidden list
+    user.forbidden = data.forbidden;
+    try {
+      await this.userRepository.save(user);
+    } catch (e) {
+      console.error(e);
+      return response.status(501).send('Error while adding forbidden users');
+    }
+
+    return {
+      users: [
+        ...secretSanta.users.filter((oldUser) => oldUser.id != user.id)
+        , user],
+    }
   }
 }

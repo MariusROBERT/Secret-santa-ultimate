@@ -25,4 +25,9 @@ export class AppController {
   addUser(@Param('code') code: string, @Body() data: NewUser) {
     return this.appService.addUser(code, data);
   }
+
+  @Post('/setForbidden/:code')
+  addForbidden(@Param('code') code: string, @Body() data: {id: number, forbidden: number[]}) {
+    return this.appService.addForbidden(code, data);
+  }
 }
