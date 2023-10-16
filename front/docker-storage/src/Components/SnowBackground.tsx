@@ -12,7 +12,6 @@ export default function SnowBackground({children}: { children: React.ReactNode }
       <>
         <div style={{position: 'absolute', zIndex: 0}}>
           <Particles
-              id={'particles-js'}
               init={particlesInit}
               options={{
                 background: {

@@ -4,3 +4,7 @@
   padding: 0;
   text-align: center;
 }
+
+#tsparticles canvas {
+  background: linear-gradient(0deg, #9a0000, #f00);
+}
