@@ -19,7 +19,7 @@ interface SecretSanta {
 }
 
 const schema = z.object({
-  name: z.string().min(2, {message: 'Name should have at least 2 letters'}),
+  name: z.string().min(2, {message: '2 letters min'}).max(50, {message: '50 letters max'}),
   email: z.string().email({message: 'Invalid email'}),
 });
 
@@ -123,6 +123,7 @@ export default function Join() {
                         {...form.getInputProps('email')}
                         placeholder={'Email'}/>
                   </Table.Td>
+                  <Table.Td/>
                 </Table.Tr>
               </Table.Tbody>
             </Table>
