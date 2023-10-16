@@ -12,18 +12,36 @@ interface Props {
 
 
 export default function UserTabRow(props: Props) {
-  const [banned, setBanned] = useState<string[]>(
-      props.user.forbidden?.map(
-          (id) => props.allUsers.find(
-              (user) => user.id === id)?.name || '')
-      || []
-  );
+  const [oldBanned, setOldBanned] = useState<string[]>(getNames(props.user.forbidden || []));
+  const [newBanned, setNewBanned] = useState<string[]>(getNames(props.user.forbidden || []));
+  const [bannedOpened, setBannedOpened] = useState(false);
+
+  function getIDs(names: string[]): number[] {
+    if (!names)
+      return [];
+    return names.map(
+        (name) => props.allUsers.find(
+            (user) => user.name === name)?.id || -1).sort(
+        (a, b) => a - b);
+  }
+
+  function getNames(ids: number[]): string[] {
+    if (!ids)
+      return [];
+    return ids.sort(
+        (a, b) => a - b).map(
+        (id) => props.allUsers.find(
+            (user) => user.id === id)?.name || '');
+  }
 
   function confirm() {
-    const bannedIds = banned.map(
-        (name) => props.allUsers.find(
-            (user) => user.name === name)?.id);
-    console.log(bannedIds);
+    const newIds = getIDs(newBanned);
+    console.log(newIds);
+    if (JSON.stringify(newIds) === JSON.stringify(getIDs(oldBanned))) {
+      setBannedOpened(false);
+      return;
+    }
+
     fetch(apiURL + '/setForbidden/' + props.code, {
       method: 'POST',
       headers: {
@@ -31,16 +49,25 @@ export default function UserTabRow(props: Props) {
       },
       body: JSON.stringify({
         id: props.user.id,
-        forbidden: bannedIds,
+        forbidden: newIds,
       })
     }).then((response) => {
+      setBannedOpened(false);
       if (response.ok) {
         response.json()
-            .then((data) => console.log(data));
+            .then((data) => {
+              // console.log(data);
+              setOldBanned(getNames(data.users.find((user: User) => user.id === props.user.id).forbidden || []));
+            });
       }
     }).catch((error) => {
       console.error(error)
     })
+  }
+
+  function cancel() {
+    setBannedOpened(false);
+    setNewBanned(oldBanned);
   }
 
   return (
@@ -49,13 +76,19 @@ export default function UserTabRow(props: Props) {
         <Table.Td>{props.user.mail}</Table.Td>
         <Table.Td>
           <Popover
-              position="right"
-              width={350}
+              position="right-start"
               withArrow
-              closeOnClickOutside={false}
+              opened={bannedOpened}
           >
             <Popover.Target>
-              <Button variant={'light'} px={5}>
+              <Button variant={'light'}
+                      px={5}
+                      onClick={() => {
+                        JSON.stringify(getIDs(newBanned)) === JSON.stringify(getIDs(oldBanned)) ?
+                            setBannedOpened(!bannedOpened) :
+                            setBannedOpened(true)
+                      }}
+              >
                 <List/>
               </Button>
             </Popover.Target>
@@ -67,12 +100,18 @@ export default function UserTabRow(props: Props) {
                     data={props.allUsers.filter(
                         (user) => user.id !== props.user.id).map(
                         (user) => user.name) || []}
-                    value={banned}
-                    onChange={setBanned}
+                    value={newBanned}
+                    onChange={(e) => {
+                      // console.log('banned:', e);
+                      setNewBanned(e);
+                    }}
                     maxDropdownHeight={200}
                     clearable
                 />
-                <Button variant={'light'} mt={'md'} onClick={confirm}>Done</Button>
+                <Flex justify={'space-evenly'} w={'100%'}>
+                  <Button variant={'outline'} mt={'md'} onClick={cancel}>Cancel</Button>
+                  <Button variant={'light'} mt={'md'} onClick={confirm}>Save</Button>
+                </Flex>
               </Flex>
             </Popover.Dropdown>
           </Popover>
