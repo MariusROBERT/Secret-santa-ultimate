@@ -88,7 +88,7 @@ export default function Join() {
   });
 
   return (
-      <Flex direction={'column'} gap={'xl'} w={'90vw'} pos={'relative'} h={'90vh'} align={'center'}>
+      <Flex direction={'column'} gap={'xl'} pos={'relative'} align={'center'}>
         <LoadingOverlay visible={loading} overlayProps={{radius: 'sm', blur: 2}}/>
         <Title>{secretSanta?.name || 'Name'}</Title>
         <Flex direction={'row'} justify={'space-between'} maw={500} miw={200}>
