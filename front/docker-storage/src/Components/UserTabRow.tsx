@@ -1,6 +1,6 @@
 import {User} from "../pages/Join.tsx";
 import {List} from "tabler-icons-react";
-import {Button, Flex, MultiSelect, Popover, Table} from "@mantine/core";
+import {Button, Flex, MultiSelect, Popover, Table, Text} from "@mantine/core";
 import {useState} from "react";
 import {apiURL} from "../constants.ts";
 
@@ -72,13 +72,22 @@ export default function UserTabRow(props: Props) {
 
   return (
       <Table.Tr>
-        <Table.Td>{props.user.name}</Table.Td>
-        <Table.Td>{props.user.mail}</Table.Td>
+        <Table.Td maw={115}>
+          <Text truncate={'end'}>
+            {props.user.name}
+          </Text>
+        </Table.Td>
+        <Table.Td maw={115}>
+          <Text truncate={'end'}>
+            {props.user.mail}
+          </Text>
+        </Table.Td>
         <Table.Td>
           <Popover
               position="right-start"
               withArrow
               opened={bannedOpened}
+              width={275}
           >
             <Popover.Target>
               <Button variant={'light'}

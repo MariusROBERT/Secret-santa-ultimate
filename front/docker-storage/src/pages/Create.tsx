@@ -6,7 +6,7 @@ import {Check, Copy} from 'tabler-icons-react';
 
 export default function Create() {
   const [name, setName] = useState<string>('');
-  const [mailDate, setMailDate] = useState<Date | null>(new Date);
+  const [mailDate, setMailDate] = useState<Date | null>(new Date((new Date()).setDate((new Date()).getDate() + 1)));
   const [loading, setLoading] = useState<boolean>(false);
   const [code, setCode] = useState<string>('');
 

@@ -1,9 +1,22 @@
-import {Button, Flex, LoadingOverlay, Table, Text, TextInput, Title} from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Flex,
+  Input,
+  LoadingOverlay,
+  ScrollArea,
+  Table,
+  Text,
+  TextInput,
+  Title
+} from '@mantine/core';
 import {useEffect, useState} from 'react';
 import {apiURL} from '../constants.ts';
 import {z} from 'zod';
 import {useForm, zodResolver} from '@mantine/form';
 import UserTabRow from "../Components/UserTabRow.tsx";
+import {CalendarEvent, Check, Pencil} from "tabler-icons-react";
+import {DatePickerInput} from "@mantine/dates";
 
 export interface User {
   id: number;
@@ -27,6 +40,9 @@ export default function Join() {
   const [code] = useState<string>(new URLSearchParams(window.location.search).get('code') || '');
   const [loading, setLoading] = useState<boolean>(true);
   const [secretSanta, setSecretSanta] = useState<SecretSanta | null>(null);
+  const [title, setTitle] = useState<string>('');
+  const [editTitle, setEditTitle] = useState<boolean>(false);
+  const [date, setDate] = useState<Date | null>(null);
 
   useEffect(() => {
     fetch(apiURL + '/infos/' + code, {
@@ -45,13 +61,37 @@ export default function Join() {
           };
           console.log(secretSanta);
           setSecretSanta(secretSanta);
+          setTitle(secretSanta.name);
           setLoading(false);
+          setDate(new Date(secretSanta.mailDate));
         });
       }
     }).catch((error) => {
       console.error(error);
     });
   }, [code]);
+
+  useEffect(() => {
+    if (secretSanta?.mailDate === date)
+      return;
+    fetch(apiURL + '/editDate/' + code, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        date: date,
+      })
+    }).then(
+        (r) => {
+          if (r.ok) {
+            setDate(date);
+          } else {
+            console.log(r);
+          }
+        }
+    )
+  }, [date]);
 
   function addUser(newName: string, newMail: string) {
     if (newName === '' || newMail === '')
@@ -78,6 +118,31 @@ export default function Join() {
     )
   }
 
+  function confirmEditTitle() {
+    fetch(apiURL + '/editTitle/' + code, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: title,
+      })
+    }).then(
+        (r) => {
+          if (r.ok) {
+            r.json().then(() => {
+              if (secretSanta)
+                setSecretSanta({...secretSanta, name: title});
+              setEditTitle(false);
+            });
+          } else {
+            console.log(r);
+            setEditTitle(false);
+          }
+        }
+    )
+  }
+
   const form = useForm({
     validateInputOnBlur: true,
     validate: zodResolver(schema),
@@ -88,46 +153,73 @@ export default function Join() {
   });
 
   return (
-      <Flex direction={'column'} gap={'xl'} pos={'relative'} align={'center'}>
+      <Flex direction={'column'} gap={'xl'} pos={'relative'} align={'center'} maw={'90vw'} mah={'90vh'}>
         <LoadingOverlay visible={loading} overlayProps={{radius: 'sm', blur: 2}}/>
-        <Title>{secretSanta?.name || 'Name'}</Title>
-        <Flex direction={'row'} justify={'space-between'} maw={500} miw={200}>
+        {
+          editTitle ?
+              <Flex align={'center'} gap={'sm'}>
+                <Input value={title} onChange={(e) => setTitle(e.currentTarget.value)}/>
+                <ActionIcon variant={'light'} onClick={confirmEditTitle}>
+                  <Check size={24}/>
+                </ActionIcon>
+              </Flex>
+              :
+              <Flex align={'center'} gap={'sm'}>
+                <Title>{secretSanta?.name || 'Name'}</Title>
+                <ActionIcon variant={'light'} onClick={() => setEditTitle(true)}>
+                  <Pencil size={24}/>
+                </ActionIcon>
+              </Flex>
+        }
+        <Flex direction={'row'} justify={'space-between'} maw={500} miw={200} gap={'sm'} align={'center'}>
           <Text>Mail send date:</Text>
-          <Text>{secretSanta?.mailDate?.toLocaleDateString()}</Text>
+          {
+            (secretSanta?.mailDate || 0) < new Date() ?
+                <Text>{secretSanta?.mailDate?.toLocaleDateString()}</Text> :
+                <DatePickerInput
+                    variant={'unstyled'}
+                    rightSection={<ActionIcon> <CalendarEvent size={24}/> </ActionIcon>}
+                    value={date}
+                    onChange={setDate}
+                    minDate={new Date((new Date()).setDate((new Date()).getDate() + 1))}
+                />
+          }
         </Flex>
         <Flex direction={'column'}>
           <form onSubmit={form.onSubmit((values) => addUser(values.name, values.email))}>
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>Mail</Table.Th>
-                  <Table.Th>Forbidden</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {
-                    secretSanta?.participants.length !== 0 &&
-                    secretSanta?.participants?.map((user, key) => {
-                      return <UserTabRow user={user} allUsers={secretSanta?.participants} code={code} key={key}/>
-                    })
-                }
-                <Table.Tr>
-                  <Table.Td>
-                    <TextInput
-                        {...form.getInputProps('name')}
-                        placeholder={'Name'}/>
-                  </Table.Td>
-                  <Table.Td>
-                    <TextInput
-                        {...form.getInputProps('email')}
-                        placeholder={'Email'}/>
-                  </Table.Td>
-                  <Table.Td/>
-                </Table.Tr>
-              </Table.Tbody>
-            </Table>
-            <Button type={"submit"}>Add user</Button>
+            <ScrollArea h={'50vh'} w={'80vw'}>
+              <Table striped highlightOnHover mah={'30vh'} withTableBorder>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Name</Table.Th>
+                    <Table.Th>Mail</Table.Th>
+                    <Table.Th>Ban</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {
+                      secretSanta?.participants.length !== 0 &&
+                      secretSanta?.participants?.map((user, key) => {
+                        return <UserTabRow user={user} allUsers={secretSanta?.participants} code={code} key={key}/>
+                      })
+                  }
+                  <Table.Tr>
+                    <Table.Td>
+                      <TextInput
+                          {...form.getInputProps('name')}
+                          placeholder={'Name'}/>
+                    </Table.Td>
+                    <Table.Td>
+                      <TextInput
+                          {...form.getInputProps('email')}
+                          placeholder={'Email'}/>
+                    </Table.Td>
+                    <Table.Td/>
+                  </Table.Tr>
+                </Table.Tbody>
+              </Table>
+            </ScrollArea>
+            <Button type={"submit"} mt={'md'}>Add user</Button>
           </form>
         </Flex>
       </Flex>

@@ -151,4 +151,26 @@ export class AppService {
         , user],
     }
   }
+
+  editTitle(code: string, data: { name: string }) {
+    if (!data.name || data.name === '' || !code || code === '')
+      throw new BadRequestException('Missing data');
+    return this.secretSantaRepository
+        .createQueryBuilder('secretsanta')
+        .update()
+        .set({name: data.name})
+        .where('secretsanta.code = :code', {code})
+        .execute();
+  }
+
+  editDate(code: string, data: { date: string }) {
+    if (!data.date || data.date === '' || !code || code === '')
+      throw new BadRequestException('Missing data');
+    return this.secretSantaRepository
+        .createQueryBuilder('secretsanta')
+        .update()
+        .set({mailDate: new Date(data.date)})
+        .where('secretsanta.code = :code', {code})
+        .execute();
+  }
 }

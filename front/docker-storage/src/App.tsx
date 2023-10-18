@@ -17,7 +17,7 @@ export default function App() {
       <MantineProvider theme={theme}>
         <SnowBackground>
           <Center miw={'100vw'} mih={'100vh'} m={0} p={0} pos={'absolute'} top={0}>
-            <Paper bg={'white'} p={'xl'} radius={'md'} shadow={'xl'} withBorder>
+            <Paper bg={'white'} p={'md'} radius={'md'} shadow={'xl'} withBorder>
               <BrowserRouter>
                 <Routes>
                   <Route path={'/'} element={<MainPage/>}/>

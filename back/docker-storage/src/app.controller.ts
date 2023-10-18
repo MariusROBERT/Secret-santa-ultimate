@@ -1,4 +1,4 @@
-import {Body, Controller, Get, Param, Post} from '@nestjs/common';
+import {Body, Controller, Get, Param, Patch, Post} from '@nestjs/common';
 import {AppService, NewSecretSanta, NewUser} from './app.service';
 
 @Controller()
@@ -27,7 +27,17 @@ export class AppController {
   }
 
   @Post('/setForbidden/:code')
-  addForbidden(@Param('code') code: string, @Body() data: {id: number, forbidden: number[]}) {
+  addForbidden(@Param('code') code: string, @Body() data: { id: number, forbidden: number[] }) {
     return this.appService.addForbidden(code, data);
+  }
+
+  @Patch('editTitle/:code')
+  changeName(@Param('code') code: string, @Body() data: { name: string }) {
+    return this.appService.editTitle(code, data);
+  }
+
+  @Patch('editDate/:code')
+    changeDate(@Param('code') code: string, @Body() data: { date: string }) {
+      return this.appService.editDate(code, data);
   }
 }
