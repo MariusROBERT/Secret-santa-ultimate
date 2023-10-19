@@ -56,14 +56,25 @@ export class AppService {
         console.error('No suitable solution for ', secretSanta.name, secretSanta.code);
         return;
       }
-      const promises = [];
+
+      const mailPromises = [];
+      const backupPromises = [];
+      console.log('start');
       for (const solutionElement of solution) {
-        // console.log(solutionElement[0].name, '->', solutionElement[1].name)
-        //TODO: backup solution in database
-        promises.push(this.sendMail(secretSanta, solutionElement[0], solutionElement[1]));
+        // console.log(solutionElement[0].id, '->', solutionElement[1].id)
+        backupPromises.push(
+            this.userRepository
+                .createQueryBuilder('user')
+                .update()
+                .set({giftTo: solutionElement[1].id})
+                .where('"user"."id" = :id', {id: solutionElement[0].id})
+                .execute()
+        );
+        mailPromises.push(this.sendMail(secretSanta, solutionElement[0], solutionElement[1]));
       }
-      await Promise.all(promises);
-      console.log('Mails sent for', secretSanta.name);
+      Promise.all(mailPromises).then(() => console.log('Mails sent for', secretSanta.name));
+      Promise.all(backupPromises).then(() => console.log('Backup done for', secretSanta.name));
+      Promise.all([...mailPromises, ...backupPromises]).then(() => console.log('All done for', secretSanta.name));
     }
   }
 

@@ -12,10 +12,13 @@ export class UserEntity {
   @Column()
   mail: string;
 
-  @ManyToOne(()=> SecretSantaEntity, (secretsanta) => secretsanta.users)
+  @ManyToOne(() => SecretSantaEntity, (secretsanta) => secretsanta.users)
   @JoinTable()
   public secretSanta: SecretSantaEntity;
 
   @Column('integer', {array: true, nullable: true})
   forbidden: number[];
+
+  @Column('integer', {nullable: true})
+  giftTo: number;
 }
