@@ -22,6 +22,10 @@ const envVars = [
   'POSTGRES_USER',
   'POSTGRES_PASSWORD',
   'POSTGRES_DB',
+  'EMAIL_ADDRESS',
+  'EMAIL_PASSWORD',
+  'EMAIL_SMTP',
+  'EMAIL_PORT',
 ];
 
 let error = false;
@@ -42,11 +46,11 @@ async function bootstrap() {
     credentials: true, // Permettre les cookies, si nécessaire
   });
   app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true, // transforme elements en le type precisé (ex : mesQueryParams: GetPaginatedTodosDto)
-      whitelist: true, // accepte seulement ce qu'on a demandé (evite les injections sql par exemple)
-      forbidNonWhitelisted: true,
-    }),
+      new ValidationPipe({
+        transform: true, // transforme elements en le type precisé (ex : mesQueryParams: GetPaginatedTodosDto)
+        whitelist: true, // accepte seulement ce qu'on a demandé (evite les injections sql par exemple)
+        forbidNonWhitelisted: true,
+      }),
   );
   app.use(json({limit: '50mb'}));
   await app.listen(3001);

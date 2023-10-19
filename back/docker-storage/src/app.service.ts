@@ -6,6 +6,8 @@ import {SecretSantaEntity} from './database/entities/secretsanta.entity';
 import {response} from 'express';
 import {Cron} from "@nestjs/schedule";
 import {solve} from "./utils/SecretSantaSolver";
+import {MailerService} from "@nestjs-modules/mailer";
+import * as process from "process";
 
 export interface NewSecretSanta {
   name: string,
@@ -23,7 +25,8 @@ export class AppService {
       @InjectRepository(UserEntity)
       private userRepository: Repository<UserEntity>,
       @InjectRepository(SecretSantaEntity)
-      private secretSantaRepository: Repository<SecretSantaEntity>
+      private secretSantaRepository: Repository<SecretSantaEntity>,
+      private readonly mailerService: MailerService,
   ) {
   }
 
@@ -36,8 +39,6 @@ export class AppService {
     const tomorrowDate = new Date();
     tomorrowDate.setHours(22, 0, 0, 0);
 
-    // console.log(todayDate, tomorrowDate);
-
     const today = await this.secretSantaRepository
         .createQueryBuilder('secretsanta')
         .where('secretsanta.mailDate >= :todayDate', {todayDate})
@@ -49,18 +50,53 @@ export class AppService {
       return;
     }
     for (const secretSanta of today) {
-      console.log(secretSanta.mailDate, secretSanta.name);
+      console.log(secretSanta.mailDate.toLocaleDateString(), secretSanta.name);
       const solution = solve(secretSanta);
       if (!solution) {
         console.error('No suitable solution for ', secretSanta.name, secretSanta.code);
         return;
       }
-      // for (const solutionElement of solution) {
-      //   console.log(solutionElement[0].name, '->', solutionElement[1].name)
-      // }
-      // console.log('');
-      //TOOD: send mails
+      const promises = [];
+      for (const solutionElement of solution) {
+        // console.log(solutionElement[0].name, '->', solutionElement[1].name)
+        //TODO: backup solution in database
+        promises.push(this.sendMail(secretSanta, solutionElement[0], solutionElement[1]));
+      }
+      await Promise.all(promises);
+      console.log('Mails sent for', secretSanta.name);
     }
+  }
+
+  async sendMail(secretSanta: SecretSantaEntity, to: UserEntity, giftee: UserEntity) {
+    const html = `
+      <html lang="en">
+        <body>
+          <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td style="background: linear-gradient(0deg, #9a0000, #f00); padding: 150px 0;" align="center" width="100%">
+                <table>
+                  <tr>
+                    <td style="background-color: white; border-radius: 10px; padding: 50px;text-align: center;">
+                      <h1 style="color: blue;">Hello ${to.name} 👋</h1>
+                      <p>This year, for ${secretSanta.name}'s secret santa, you will gift ${giftee.name}<br/>
+                      Good luck and have fun!</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>`;
+
+    await this.mailerService.sendMail({
+      to: to.mail,
+      from: process.env.EMAIL_ADDRESS,
+      subject: secretSanta.name + '\'s secret santa',
+      html,
+    }).then().catch((err) => {
+      console.error(secretSanta.name, to.name, 'error:', err.response);
+    });
   }
 
   getHello(): string {
