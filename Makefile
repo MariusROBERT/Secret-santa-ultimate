@@ -19,21 +19,9 @@ re: fclean
 
 ls:
 	@docker ps -a
-	@echo ""
+	@echo
 	@docker volume ls
-	@echo ""
+	@echo
 	@docker images
-
-lint:
-	docker exec -it front npm run lint
-	docker exec -it back npm run lint
-
-lint-fix:
-	docker exec -it front npm run lint:fix
-	docker exec -it back npm run lint:fix
-
-install:
-	docker exec -it front npm install
-	docker exec -it back npm install
 
 .PHONY: all down up clean fclean ls lint lint-fix install re
