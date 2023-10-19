@@ -4,6 +4,8 @@ import {UserEntity} from './database/entities/user.entity';
 import {Repository} from 'typeorm';
 import {SecretSantaEntity} from './database/entities/secretsanta.entity';
 import {response} from 'express';
+import {Cron} from "@nestjs/schedule";
+import {solve} from "./utils/SecretSantaSolver";
 
 export interface NewSecretSanta {
   name: string,
@@ -25,6 +27,42 @@ export class AppService {
   ) {
   }
 
+  //every day at 8am
+  @Cron('0 0 8 * * *')
+  async sendMails() {
+    const todayDate = new Date();
+    todayDate.setHours(22, 0, 0, 0);
+    todayDate.setDate(todayDate.getDate() - 1);
+    const tomorrowDate = new Date();
+    tomorrowDate.setHours(22, 0, 0, 0);
+
+    // console.log(todayDate, tomorrowDate);
+
+    const today = await this.secretSantaRepository
+        .createQueryBuilder('secretsanta')
+        .where('secretsanta.mailDate >= :todayDate', {todayDate})
+        .andWhere('secretsanta.mailDate < :tomorrowDate', {tomorrowDate})
+        .leftJoinAndSelect('secretsanta.users', 'users')
+        .getMany();
+    if (today.length === 0) {
+      // console.log('No secret santa', todayDate);
+      return;
+    }
+    for (const secretSanta of today) {
+      console.log(secretSanta.mailDate, secretSanta.name);
+      const solution = solve(secretSanta);
+      if (!solution) {
+        console.error('No suitable solution for ', secretSanta.name, secretSanta.code);
+        return;
+      }
+      // for (const solutionElement of solution) {
+      //   console.log(solutionElement[0].name, '->', solutionElement[1].name)
+      // }
+      // console.log('');
+      //TOOD: send mails
+    }
+  }
+
   getHello(): string {
     return 'Hello World!';
   }
@@ -41,12 +79,12 @@ export class AppService {
   async create(data: NewSecretSanta) {
     if (!data.name || data.name === '' || !data.mailDate || data.mailDate === '')
       throw new BadRequestException('Missing data');
-    const newSecretSanta = await this.secretSantaRepository.create();
+    const newSecretSanta = this.secretSantaRepository.create();
     newSecretSanta.name = data.name;
     newSecretSanta.mailDate = new Date(data.mailDate);
 
-    let checkCode;
-    let code;
+    let checkCode: SecretSantaEntity;
+    let code: string;
     do {
       code = this.generateCode();
       checkCode = await this.secretSantaRepository
