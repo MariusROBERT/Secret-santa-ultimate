@@ -199,6 +199,27 @@ export class AppService {
     };
   }
 
+  async delUser(code: string, data: { id: number }) {
+    if (!data.id || !code || code === '')
+      throw new BadRequestException('Missing data');
+
+    const secretSanta = await this.secretSantaRepository
+        .createQueryBuilder('secretsanta')
+        .where('secretSanta.code = :code', {code})
+        .leftJoinAndSelect('secretsanta.users', 'users')
+        .getOne();
+    if (!secretSanta)
+      throw new BadRequestException('Invalid code');
+    if (!secretSanta.users.find(user => user.id === data.id))
+        throw new BadRequestException('User not in secret santa');
+
+    await this.userRepository
+        .createQueryBuilder('user')
+        .delete()
+        .where('"user"."id" = :id', {id: data.id})
+        .execute();
+  }
+
   async addForbidden(code: string, data: { id: number, forbidden: number[] }) {
     if (!data.id || !data.forbidden || !code || code === '')
       throw new BadRequestException('Missing data');

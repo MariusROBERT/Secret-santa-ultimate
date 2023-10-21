@@ -129,6 +129,31 @@ export default function Join() {
     )
   }
 
+  function delUser(id: number) {
+    if (id < 1)
+      return;
+    fetch(apiURL + '/delUser/' + code, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: id,
+      })
+    }).then((r) => {
+          if (r.ok) {
+            setSecretSanta({
+              name: secretSanta?.name || '',
+              participants: secretSanta?.participants.filter((user) => user.id !== id) || [],
+              mailDate: secretSanta?.mailDate || new Date(),
+            })
+          } else {
+            console.error(r);
+          }
+        }
+    )
+  }
+
   function confirmEditTitle() {
     fetch(apiURL + '/editTitle/' + code, {
       method: 'PATCH',
@@ -211,7 +236,13 @@ export default function Join() {
                   {
                       secretSanta?.participants.length !== 0 &&
                       secretSanta?.participants?.map((user, key) => {
-                        return <UserTabRow user={user} allUsers={secretSanta?.participants} code={code} key={key}/>
+                        return <UserTabRow
+                            user={user}
+                            allUsers={secretSanta?.participants}
+                            code={code}
+                            delUser={delUser}
+                            key={key}
+                        />
                       })
                   }
                   <Table.Tr>

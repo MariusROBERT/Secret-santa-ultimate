@@ -1,6 +1,6 @@
 import {User} from "../pages/Join.tsx";
-import {List} from "tabler-icons-react";
-import {Button, Flex, MultiSelect, Popover, Table, Text} from "@mantine/core";
+import {List, X} from "tabler-icons-react";
+import {ActionIcon, Button, Flex, HoverCard, MultiSelect, Popover, Table, Text} from "@mantine/core";
 import {useState} from "react";
 import {apiURL} from "../constants.ts";
 
@@ -8,6 +8,7 @@ interface Props {
   user: User;
   allUsers: User[];
   code: string;
+  delUser: (id: number) => void;
 }
 
 
@@ -73,9 +74,18 @@ export default function UserTabRow(props: Props) {
   return (
       <Table.Tr>
         <Table.Td maw={115}>
-          <Text truncate={'end'}>
-            {props.user.name}
-          </Text>
+          <HoverCard position={"left"} offset={-10}>
+            <HoverCard.Target>
+              <Text truncate={'end'}>
+                {props.user.name}
+              </Text>
+            </HoverCard.Target>
+            <HoverCard.Dropdown p={'xs'}>
+              <ActionIcon onClick={() => props.delUser(props.user.id)}>
+                <X/>
+              </ActionIcon>
+            </HoverCard.Dropdown>
+          </HoverCard>
         </Table.Td>
         <Table.Td maw={115}>
           <Text truncate={'end'}>
