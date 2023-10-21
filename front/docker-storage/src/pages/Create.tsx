@@ -62,10 +62,13 @@ export default function Create() {
         </Button>
         {
           code === '' ?
-              <Button variant={'transparent'}>{' '}</Button> :
+              <Button style={{visibility: 'hidden'}}>{' '}</Button> :
               <CopyButton value={code}>
                 {({copied, copy}) => (
-                    <Button onClick={copy} variant={'transparent'}>
+                    <Button onClick={() => {
+                      copy();
+                      window.location.href = '/join?code=' + code;
+                    }} variant={'transparent'}>
                       {copied ?
                           <>Copied<Check style={{width: 16, marginLeft: 10}}/></> :
                           <>{code}<Copy style={{width: 16, marginLeft: 10}}/></>

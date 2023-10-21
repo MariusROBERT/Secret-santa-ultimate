@@ -12,9 +12,15 @@ export default function MainPage() {
   }, [code]);
 
   return (
-      <Flex justify={'space-evenly'} align={'center'} gap={'xl'} m={'xl'}>
+      <Flex justify={'space-evenly'}
+            align={'center'}
+            gap={{base: 0, sm: 'xl'}}
+            m={{base: 'xs', sm: 'xl'}}
+            direction={{base: 'column', sm: 'row'}}>
         <Flex direction={'column'}>
-          <Title mb={'xl'} p="xl">Welcome to <br/> secret santa</Title>
+          <Title mb={{base: 'xs', sm: 'xl'}} p={{base: 'xs', sm: 'xl'}}>
+            Welcome to <br/> secret santa
+          </Title>
           <Button style={{visibility: 'hidden'}}/>
         </Flex>
         <Flex direction="column" align={'center'}>

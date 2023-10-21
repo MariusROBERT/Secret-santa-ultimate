@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Button,
+  CopyButton,
   Flex,
   Input,
   LoadingOverlay,
@@ -200,11 +201,20 @@ export default function Join() {
                 </ActionIcon>
               </Flex>
               :
-              <Flex align={'center'} gap={'sm'}>
-                <Title>{secretSanta?.name || 'Name'}</Title>
-                <ActionIcon variant={'light'} onClick={() => setEditTitle(true)}>
-                  <Pencil size={24}/>
-                </ActionIcon>
+              <Flex direction={'column'} align={'center'}>
+                <Flex align={'center'} gap={'sm'}>
+                  <Title>{secretSanta?.name || 'Name'}</Title>
+                  <ActionIcon variant={'light'} onClick={() => setEditTitle(true)}>
+                    <Pencil size={24}/>
+                  </ActionIcon>
+                </Flex>
+                <CopyButton value={window.location.href}>
+                  {({copied, copy}) => (
+                      <Button variant={'transparent'} onClick={copy}>
+                        {copied ? 'copied' : code}
+                      </Button>
+                  )}
+                </CopyButton>
               </Flex>
         }
         <Flex direction={'row'} justify={'space-between'} maw={500} miw={200} gap={'sm'} align={'center'}>
