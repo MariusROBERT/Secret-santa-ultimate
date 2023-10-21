@@ -1,4 +1,4 @@
-import {BadRequestException, Injectable} from '@nestjs/common';
+import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {UserEntity} from './database/entities/user.entity';
 import {Repository} from 'typeorm';
@@ -151,14 +151,19 @@ export class AppService {
     return {code};
   }
 
-  getInfos(code: string) {
+  async getInfos(code: string) {
     if (!code || code === '')
       throw new BadRequestException('Missing code');
-    return this.secretSantaRepository
+    if (!/^[A-Z0-9]{6}$/.test(code))
+      throw new NotFoundException('Invalid code');
+    const secetSanta = await this.secretSantaRepository
         .createQueryBuilder('secretsanta')
         .leftJoinAndSelect('secretsanta.users', 'users')
         .where('secretsanta.code = :code', {code})
         .getOne();
+    if (!secetSanta)
+      throw new NotFoundException('Invalid code');
+    return secetSanta;
   }
 
   async addUser(code: string, data: NewUser) {

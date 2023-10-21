@@ -17,6 +17,7 @@ import {useForm, zodResolver} from '@mantine/form';
 import UserTabRow from "../Components/UserTabRow.tsx";
 import {CalendarEvent, Check, Pencil} from "tabler-icons-react";
 import {DatePickerInput} from "@mantine/dates";
+import {useNavigate} from "react-router-dom";
 
 export interface User {
   id: number;
@@ -37,14 +38,19 @@ const schema = z.object({
 });
 
 export default function Join() {
-  const [code] = useState<string>(new URLSearchParams(window.location.search).get('code') || '');
+  const [code] = useState<string>(new URLSearchParams(window.location.search).get('code')?.toUpperCase() || '');
   const [loading, setLoading] = useState<boolean>(true);
   const [secretSanta, setSecretSanta] = useState<SecretSanta | null>(null);
   const [title, setTitle] = useState<string>('');
   const [editTitle, setEditTitle] = useState<boolean>(false);
   const [date, setDate] = useState<Date | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (code === '') {
+      console.log('No code');
+      navigate('/');
+    }
     fetch(apiURL + '/infos/' + code, {
       method: 'GET',
       headers: {
@@ -65,6 +71,11 @@ export default function Join() {
           setLoading(false);
           setDate(new Date(secretSanta.mailDate));
         });
+      } else {
+        if (r.status === 404) {
+          console.log(`Secret santa ${code} not found`);
+          navigate('/');
+        }
       }
     }).catch((error) => {
       console.error(error);
@@ -72,7 +83,7 @@ export default function Join() {
   }, [code]);
 
   useEffect(() => {
-    if (secretSanta?.mailDate === date)
+    if (!date || secretSanta?.mailDate === date)
       return;
     fetch(apiURL + '/editDate/' + code, {
       method: 'PATCH',
@@ -181,7 +192,7 @@ export default function Join() {
                     rightSection={<ActionIcon> <CalendarEvent size={24}/> </ActionIcon>}
                     value={date}
                     onChange={setDate}
-                    minDate={new Date((new Date()).setDate((new Date()).getDate() + 1))}
+                    // minDate={new Date((new Date()).setDate((new Date()).getDate() + 1))}
                 />
           }
         </Flex>
