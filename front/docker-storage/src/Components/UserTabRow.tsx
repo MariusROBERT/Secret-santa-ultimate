@@ -9,6 +9,7 @@ interface Props {
   allUsers: User[];
   code: string;
   delUser: (id: number) => void;
+  editable: boolean;
 }
 
 
@@ -74,18 +75,23 @@ export default function UserTabRow(props: Props) {
   return (
       <Table.Tr>
         <Table.Td maw={115}>
-          <HoverCard position={"left"} offset={-10}>
-            <HoverCard.Target>
+          {props.editable ?
+              <HoverCard position={"left"} offset={-10}>
+                <HoverCard.Target>
+                  <Text truncate={'end'}>
+                    {props.user.name}
+                  </Text>
+                </HoverCard.Target>
+                <HoverCard.Dropdown p={'xs'}>
+                  <ActionIcon onClick={() => props.delUser(props.user.id)}>
+                    <X/>
+                  </ActionIcon>
+                </HoverCard.Dropdown>
+              </HoverCard> :
               <Text truncate={'end'}>
                 {props.user.name}
               </Text>
-            </HoverCard.Target>
-            <HoverCard.Dropdown p={'xs'}>
-              <ActionIcon onClick={() => props.delUser(props.user.id)}>
-                <X/>
-              </ActionIcon>
-            </HoverCard.Dropdown>
-          </HoverCard>
+          }
         </Table.Td>
         <Table.Td maw={115}>
           <Text truncate={'end'}>
@@ -126,11 +132,14 @@ export default function UserTabRow(props: Props) {
                     }}
                     maxDropdownHeight={200}
                     clearable
+                    readOnly={!props.editable}
                 />
-                <Flex justify={'space-evenly'} w={'100%'}>
-                  <Button variant={'outline'} mt={'md'} onClick={cancel}>Cancel</Button>
-                  <Button variant={'light'} mt={'md'} onClick={confirm}>Save</Button>
-                </Flex>
+                {props.editable &&
+                  <Flex justify={'space-evenly'} w={'100%'}>
+                    <Button variant={'outline'} mt={'md'} onClick={cancel}>Cancel</Button>
+                    <Button variant={'light'} mt={'md'} onClick={confirm}>Save</Button>
+                  </Flex>
+                }
               </Flex>
             </Popover.Dropdown>
           </Popover>

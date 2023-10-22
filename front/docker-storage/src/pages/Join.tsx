@@ -192,31 +192,35 @@ export default function Join() {
   return (
       <Flex direction={'column'} gap={'xl'} pos={'relative'} align={'center'} maw={'90vw'} mah={'90vh'}>
         <LoadingOverlay visible={loading} overlayProps={{radius: 'sm', blur: 2}}/>
-        {
-          editTitle ?
-              <Flex align={'center'} gap={'sm'}>
-                <Input value={title} onChange={(e) => setTitle(e.currentTarget.value)}/>
-                <ActionIcon variant={'light'} onClick={confirmEditTitle}>
-                  <Check size={24}/>
-                </ActionIcon>
-              </Flex>
-              :
-              <Flex direction={'column'} align={'center'}>
-                <Flex align={'center'} gap={'sm'}>
-                  <Title>{secretSanta?.name || 'Name'}</Title>
-                  <ActionIcon variant={'light'} onClick={() => setEditTitle(true)}>
-                    <Pencil size={24}/>
-                  </ActionIcon>
-                </Flex>
-                <CopyButton value={window.location.href}>
-                  {({copied, copy}) => (
-                      <Button variant={'transparent'} onClick={copy}>
-                        {copied ? 'copied' : code}
-                      </Button>
-                  )}
-                </CopyButton>
-              </Flex>
-        }
+        <Flex direction={'column'}>
+          <Flex direction={'row'} align={'center'} gap={'sm'}>
+            {
+              editTitle ?
+                  <>
+                    <Input value={title} onChange={(e) => setTitle(e.currentTarget.value)}/>
+                    <ActionIcon variant={'light'} onClick={confirmEditTitle}>
+                      <Check size={24}/>
+                    </ActionIcon>
+                  </> :
+                  <>
+                    <Title w={'100%'}>{secretSanta?.name || 'Name'}</Title>
+                    {(secretSanta?.mailDate || 0) > new Date() &&
+                      <ActionIcon variant={'light'} onClick={() => setEditTitle(true)}>
+                        <Pencil size={24}/>
+                      </ActionIcon>
+                    }
+                  </>
+            }
+          </Flex>
+          <CopyButton value={window.location.href}>
+            {({copied, copy}) => (
+                <Button variant={'transparent'} onClick={copy}>
+                  {copied ? 'copied' : code}
+                </Button>
+            )}
+          </CopyButton>
+        </Flex>
+
         <Flex direction={'row'} justify={'space-between'} maw={500} miw={200} gap={'sm'} align={'center'}>
           <Text>Mail send date:</Text>
           {
@@ -227,7 +231,7 @@ export default function Join() {
                     rightSection={<ActionIcon> <CalendarEvent size={24}/> </ActionIcon>}
                     value={date}
                     onChange={setDate}
-                    // minDate={new Date((new Date()).setDate((new Date()).getDate() + 1))}
+                    minDate={new Date((new Date()).setDate((new Date()).getDate() + 1))}
                 />
           }
         </Flex>
@@ -251,27 +255,32 @@ export default function Join() {
                             allUsers={secretSanta?.participants}
                             code={code}
                             delUser={delUser}
+                            editable={(secretSanta?.mailDate || 0) > new Date()}
                             key={key}
                         />
                       })
                   }
-                  <Table.Tr>
-                    <Table.Td>
-                      <TextInput
-                          {...form.getInputProps('name')}
-                          placeholder={'Name'}/>
-                    </Table.Td>
-                    <Table.Td>
-                      <TextInput
-                          {...form.getInputProps('email')}
-                          placeholder={'Email'}/>
-                    </Table.Td>
-                    <Table.Td/>
-                  </Table.Tr>
+                  {(secretSanta?.mailDate || 0) > new Date() &&
+                    <Table.Tr>
+                      <Table.Td>
+                        <TextInput
+                            {...form.getInputProps('name')}
+                            placeholder={'Name'}/>
+                      </Table.Td>
+                      <Table.Td>
+                        <TextInput
+                            {...form.getInputProps('email')}
+                            placeholder={'Email'}/>
+                      </Table.Td>
+                      <Table.Td/>
+                    </Table.Tr>
+                  }
                 </Table.Tbody>
               </Table>
             </ScrollArea>
-            <Button type={"submit"} mt={'md'}>Add user</Button>
+            {(secretSanta?.mailDate || 0) > new Date() &&
+              <Button type={"submit"} mt={'md'}>Add user</Button>
+            }
           </form>
         </Flex>
       </Flex>

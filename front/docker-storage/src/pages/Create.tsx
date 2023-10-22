@@ -1,8 +1,7 @@
 import {useEffect, useState} from 'react';
 import {DatePickerInput} from '@mantine/dates';
-import {Button, CopyButton, Flex, Loader, TextInput} from '@mantine/core';
+import {Anchor, Button, Flex, Loader, TextInput} from '@mantine/core';
 import {apiURL} from '../constants.ts';
-import {Check, Copy} from 'tabler-icons-react';
 
 export default function Create() {
   const [name, setName] = useState<string>('');
@@ -62,20 +61,10 @@ export default function Create() {
         </Button>
         {
           code === '' ?
-              <Button style={{visibility: 'hidden'}}>{' '}</Button> :
-              <CopyButton value={code}>
-                {({copied, copy}) => (
-                    <Button onClick={() => {
-                      copy();
-                      window.location.href = '/join?code=' + code;
-                    }} variant={'transparent'}>
-                      {copied ?
-                          <>Copied<Check style={{width: 16, marginLeft: 10}}/></> :
-                          <>{code}<Copy style={{width: 16, marginLeft: 10}}/></>
-                      }
-                    </Button>
-                )}
-              </CopyButton>
+              <Button style={{visibility: 'hidden'}}/> :
+              <Anchor href={'/join?code=' + code}>
+                <Button variant={'transparent'}>{code}</Button>
+              </Anchor>
         }
       </Flex>
   );
