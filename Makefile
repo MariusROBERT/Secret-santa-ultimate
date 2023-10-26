@@ -2,6 +2,10 @@ all:
 	mkdir -p front/docker-storage back/docker-storage database
 	docker-compose up -d --build
 
+build:
+	mkdir -p front/docker-storage back/docker-storage database
+	docker-compose -f docker-compose-build.yml up -d --build
+
 down:
 	docker-compose down -v
 

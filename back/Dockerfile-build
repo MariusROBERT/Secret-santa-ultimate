@@ -1,0 +1,8 @@
+FROM	node:latest
+
+RUN		npm i -g @nestjs/cli
+
+WORKDIR	/app
+COPY	script-build.sh /
+RUN		chmod +x /script-build.sh
+CMD		["/script-build.sh"]
