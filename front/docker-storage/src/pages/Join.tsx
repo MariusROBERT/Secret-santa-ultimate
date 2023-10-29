@@ -124,6 +124,7 @@ export default function Join() {
               console.log(data);
               if (secretSanta && data.users)
                 setSecretSanta({...secretSanta, participants: data.users});
+              form.setValues({name: '', email: ''});
             });
           }
         }
