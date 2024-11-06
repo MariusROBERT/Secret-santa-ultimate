@@ -40,6 +40,8 @@ for (const envVar of envVars) {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, httpsOptions);
 
+  app.setGlobalPrefix('api/v1');
+
   app.enableCors({
     origin: [frontURL],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
