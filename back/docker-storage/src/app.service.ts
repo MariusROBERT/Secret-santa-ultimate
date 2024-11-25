@@ -11,7 +11,7 @@ import * as process from "process";
 
 export interface NewSecretSanta {
   name: string,
-  mailDate: string,
+  mail_date: string,
 }
 
 export interface NewUser {
@@ -41,8 +41,8 @@ export class AppService {
 
     const today = await this.secretSantaRepository
         .createQueryBuilder('secretsanta')
-        .where('secretsanta.mailDate >= :todayDate', {todayDate})
-        .andWhere('secretsanta.mailDate < :tomorrowDate', {tomorrowDate})
+        .where('secretsanta.mail_date >= :todayDate', {todayDate})
+        .andWhere('secretsanta.mail_date < :tomorrowDate', {tomorrowDate})
         .leftJoinAndSelect('secretsanta.users', 'users')
         .getMany();
     if (today.length === 0) {
@@ -50,7 +50,7 @@ export class AppService {
       return;
     }
     for (const secretSanta of today) {
-      console.log(secretSanta.mailDate.toLocaleDateString(), secretSanta.name);
+      console.log(secretSanta.mail_date.toLocaleDateString(), secretSanta.name);
       const solution = solve(secretSanta);
       if (!solution) {
         console.error('No suitable solution for ', secretSanta.name, secretSanta.code);
@@ -66,7 +66,7 @@ export class AppService {
             this.userRepository
                 .createQueryBuilder('user')
                 .update()
-                .set({giftTo: solutionElement[1].id})
+                .set({gift_to: solutionElement[1].id})
                 .where('"user"."id" = :id', {id: solutionElement[0].id})
                 .execute()
         );
@@ -124,11 +124,11 @@ export class AppService {
   }
 
   async create(data: NewSecretSanta) {
-    if (!data.name || data.name === '' || !data.mailDate || data.mailDate === '')
+    if (!data.name || data.name === '' || !data.mail_date || data.mail_date === '')
       throw new BadRequestException('Missing data');
     const newSecretSanta = this.secretSantaRepository.create();
     newSecretSanta.name = data.name;
-    newSecretSanta.mailDate = new Date(data.mailDate);
+    newSecretSanta.mail_date = new Date(data.mail_date);
 
     let checkCode: SecretSantaEntity;
     let code: string;
@@ -280,7 +280,7 @@ export class AppService {
     return this.secretSantaRepository
         .createQueryBuilder('secretsanta')
         .update()
-        .set({mailDate: new Date(data.date)})
+        .set({mail_date: new Date(data.date)})
         .where('secretsanta.code = :code', {code})
         .execute();
   }

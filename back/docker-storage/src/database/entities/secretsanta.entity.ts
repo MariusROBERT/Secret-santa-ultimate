@@ -1,4 +1,4 @@
-import {Column, Entity, JoinTable, OneToMany, PrimaryGeneratedColumn, Unique} from 'typeorm';
+import {Column, Entity, JoinTable, OneToMany, PrimaryGeneratedColumn, Unique, CreateDateColumn} from 'typeorm';
 import {UserEntity} from './user.entity';
 
 @Entity('secretsanta')
@@ -17,5 +17,9 @@ export class SecretSantaEntity {
   public users: UserEntity[];
 
   @Column({type: 'timestamptz'})
-  mailDate: Date
+  mail_date: Date
+
+  // Automatically sets the creation date when the entity is created
+  @CreateDateColumn()
+  creation_date: Date;
 }
