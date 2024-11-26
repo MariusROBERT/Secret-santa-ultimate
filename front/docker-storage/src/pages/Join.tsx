@@ -29,7 +29,7 @@ export interface User {
 
 interface SecretSanta {
   name: string;
-  mailDate: Date;
+  mail_date: Date;
   participants: User[];
 }
 
@@ -63,14 +63,14 @@ export default function Join() {
           console.log(data);
           const secretSanta: SecretSanta = {
             name: data.name,
-            mailDate: new Date(data.mailDate),
+            mail_date: new Date(data.mail_date),
             participants: data.users.sort((a: User, b: User) => a.id - b.id),
           };
           console.log(secretSanta);
           setSecretSanta(secretSanta);
           setTitle(secretSanta.name);
           setLoading(false);
-          setDate(new Date(secretSanta.mailDate));
+          setDate(new Date(secretSanta.mail_date));
         });
       } else {
         if (r.status === 404) {
@@ -84,7 +84,7 @@ export default function Join() {
   }, [code]);
 
   useEffect(() => {
-    if (!date || secretSanta?.mailDate === date)
+    if (!date || secretSanta?.mail_date === date)
       return;
     fetch(apiURL + '/editDate/' + code, {
       method: 'PATCH',
@@ -147,7 +147,7 @@ export default function Join() {
             setSecretSanta({
               name: secretSanta?.name || '',
               participants: secretSanta?.participants.filter((user) => user.id !== id) || [],
-              mailDate: secretSanta?.mailDate || new Date(),
+              mail_date: secretSanta?.mail_date || new Date(),
             })
           } else {
             console.error(r);
@@ -205,7 +205,7 @@ export default function Join() {
                   </> :
                   <>
                     <Title w={'100%'}>{secretSanta?.name || 'Name'}</Title>
-                    {(secretSanta?.mailDate || 0) > new Date() &&
+                    {(secretSanta?.mail_date || 0) > new Date() &&
                       <ActionIcon variant={'light'} onClick={() => setEditTitle(true)}>
                         <Pencil size={24}/>
                       </ActionIcon>
@@ -225,8 +225,8 @@ export default function Join() {
         <Flex direction={'row'} justify={'space-between'} maw={500} miw={200} gap={'sm'} align={'center'}>
           <Text>Mail send date:</Text>
           {
-            (secretSanta?.mailDate || 0) < new Date() ?
-                <Text>{secretSanta?.mailDate?.toLocaleDateString()}</Text> :
+            (secretSanta?.mail_date || 0) < new Date() ?
+                <Text>{secretSanta?.mail_date?.toLocaleDateString()}</Text> :
                 <DatePickerInput
                     variant={'unstyled'}
                     rightSection={<ActionIcon> <CalendarEvent size={24}/> </ActionIcon>}
@@ -256,12 +256,12 @@ export default function Join() {
                             allUsers={secretSanta?.participants}
                             code={code}
                             delUser={delUser}
-                            editable={(secretSanta?.mailDate || 0) > new Date()}
+                            editable={(secretSanta?.mail_date || 0) > new Date()}
                             key={key}
                         />
                       })
                   }
-                  {(secretSanta?.mailDate || 0) > new Date() &&
+                  {(secretSanta?.mail_date || 0) > new Date() &&
                     <Table.Tr>
                       <Table.Td>
                         <TextInput
@@ -279,7 +279,7 @@ export default function Join() {
                 </Table.Tbody>
               </Table>
             </ScrollArea>
-            {(secretSanta?.mailDate || 0) > new Date() &&
+            {(secretSanta?.mail_date || 0) > new Date() &&
               <Button type={"submit"} mt={'md'}>Add user</Button>
             }
           </form>

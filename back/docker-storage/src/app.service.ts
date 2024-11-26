@@ -156,14 +156,16 @@ export class AppService {
       throw new BadRequestException('Missing code');
     if (!/^[A-Z0-9]{6}$/.test(code))
       throw new NotFoundException('Invalid code');
-    const secetSanta = await this.secretSantaRepository
+    const secretSanta = await this.secretSantaRepository
         .createQueryBuilder('secretsanta')
         .leftJoinAndSelect('secretsanta.users', 'users')
         .where('secretsanta.code = :code', {code})
         .getOne();
-    if (!secetSanta)
+    if (!secretSanta)
       throw new NotFoundException('Invalid code');
-    return secetSanta;
+    return {...secretSanta, 
+			users: secretSanta.users.map(({ gift_to, ...rest }) => rest)
+		}
   }
 
   async addUser(code: string, data: NewUser) {
@@ -195,7 +197,7 @@ export class AppService {
       return response.status(501).send('Error while creating user');
     }
     return {
-      users: secretSanta.users.concat([user]),
+      users: secretSanta.users.concat([user]).map(({ gift_to, ...rest }) => rest),
     };
   }
 
@@ -258,8 +260,8 @@ export class AppService {
 
     return {
       users: [
-        ...secretSanta.users.filter((oldUser) => oldUser.id != user.id)
-        , user],
+        ...secretSanta.users.filter((oldUser) => oldUser.id != user.id).map(({ gift_to, ...rest }) => rest),
+		(({ gift_to, ...rest }) => rest)(user)],
     }
   }
 
