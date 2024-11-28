@@ -64,10 +64,10 @@ export class AppService {
         // console.log(solutionElement[0].id, '->', solutionElement[1].id)
         backupPromises.push(
             this.userRepository
-                .createQueryBuilder('user')
-                .update()
+                .createQueryBuilder()
+                .update(UserEntity)
                 .set({gift_to: solutionElement[1].id})
-                .where('"user"."id" = :id', {id: solutionElement[0].id})
+                .where('id = :id', {id: solutionElement[0].id})
                 .execute()
         );
         mailPromises.push(this.sendMail(secretSanta, solutionElement[0], solutionElement[1]));
