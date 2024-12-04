@@ -11,7 +11,7 @@ import * as process from "process";
 
 export interface NewSecretSanta {
   name: string,
-  mail_date: string,
+  mailDate: string,
 }
 
 export interface NewUser {
@@ -124,11 +124,11 @@ export class AppService {
   }
 
   async create(data: NewSecretSanta) {
-    if (!data.name || data.name === '' || !data.mail_date || data.mail_date === '')
+    if (!data.name || data.name === '' || !data.mailDate || data.mailDate === '')
       throw new BadRequestException('Missing data');
     const newSecretSanta = this.secretSantaRepository.create();
     newSecretSanta.name = data.name;
-    newSecretSanta.mail_date = new Date(data.mail_date);
+    newSecretSanta.mail_date = new Date(data.mailDate);
 
     let checkCode: SecretSantaEntity;
     let code: string;
@@ -218,7 +218,7 @@ export class AppService {
     await this.userRepository
         .createQueryBuilder('user')
         .delete()
-        .where('"user"."id" = :id', {id: data.id})
+        .where('app_user.id = :id', {id: data.id})
         .execute();
   }
 
@@ -234,7 +234,7 @@ export class AppService {
       throw new BadRequestException('Invalid code');
     const user = await this.userRepository
         .createQueryBuilder('user')
-        .where('user.id = :id', {id: data.id})
+        .where('app_user.id = :id', {id: data.id})
         .getOne();
     if (!user)
       throw new BadRequestException('Invalid user');
