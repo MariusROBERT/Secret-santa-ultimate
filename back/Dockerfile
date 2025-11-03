@@ -2,7 +2,16 @@ FROM	node:latest
 
 RUN		npm i -g @nestjs/cli
 
+RUN mkdir /app
 WORKDIR	/app
-COPY	script.sh /
-RUN		chmod +x /script.sh
-CMD		["/script.sh"]
+
+ENV NODE_ENV=production
+
+COPY	docker-storage/package.json .
+COPY	docker-storage/yarn.lock .
+RUN		yarn install -ci
+COPY	docker-storage .
+
+RUN npx tsc
+
+ENTRYPOINT ["nest", "start"]

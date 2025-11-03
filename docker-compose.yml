@@ -4,31 +4,31 @@ services:
     build:
       context: front
       dockerfile: Dockerfile
-    volumes:
-      - front:/app
+    networks:
+      - nginx-redirect
     ports:
-      - "3000:3000"
+      - "80:80"
     restart: always
 
   back:
     container_name: back
     networks:
+      - nginx-redirect
       - database
     build:
       context: back
       dockerfile: Dockerfile
     env_file: .env
-    volumes:
-      - back:/app
-    ports:
-      - "3001:3001"
     depends_on:
       - database
     restart: always
 
   database:
-    image: postgres
     container_name: database
+    build:
+      dockerfile_inline: |
+        FROM postgres:16
+        COPY db-init.sql /docker-entrypoint-initdb.d/seed.sql
     networks:
       - database
     volumes:
@@ -40,20 +40,15 @@ services:
     restart: always
 
 volumes:
-  front:
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "front/docker-storage"
-  back:
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "back/docker-storage"
   database:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "database"
 
 networks:
   database:
+    driver: bridge
+  nginx-redirect:
     driver: bridge
