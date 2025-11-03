@@ -19,7 +19,7 @@ services:
     build:
       context: back
       dockerfile: Dockerfile.dev
-    env_file: .env
+    env_file: dev.env
     volumes:
       - back:/app
     ports:
