@@ -1,7 +1,6 @@
 import {NestFactory} from '@nestjs/core';
 import {AppModule} from './app.module';
 import * as dotenv from 'dotenv';
-import {frontURL} from './constants';
 import * as fs from 'fs';
 import * as process from 'process';
 import {json} from 'express';
@@ -26,6 +25,7 @@ const envVars = [
   'EMAIL_PASSWORD',
   'EMAIL_SMTP',
   'EMAIL_PORT',
+  'FRONT_URL',
 ];
 
 let error = false;
@@ -43,7 +43,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.enableCors({
-    origin: [frontURL],
+    origin: [process.env.FRONT_URL],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true, // Permettre les cookies, si nécessaire
   });
