@@ -4,6 +4,7 @@
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { REGEXP_ONLY_DIGITS_AND_CHARS } from "bits-ui";
+  import CreateSecretSanta from '$lib/components/CreateSecretSanta.svelte';
 
   let santaCode = $state('');
 </script>
@@ -35,7 +36,7 @@
           <Dialog.Header>
             <Dialog.Title>New Secret Santa</Dialog.Title>
             <Dialog.Description>
-              TODO: add create modal here
+              <CreateSecretSanta/>
             </Dialog.Description>
           </Dialog.Header>
         </Dialog.Content>
