@@ -163,7 +163,7 @@ export class AppService {
         .getOne();
     if (!secretSanta)
       throw new NotFoundException('Invalid code');
-    return {...secretSanta, 
+    return {...secretSanta,
 			users: secretSanta.users.map(({ gift_to, ...rest }) => rest)
 		}
   }
@@ -216,7 +216,7 @@ export class AppService {
         throw new BadRequestException('User not in secret santa');
 
     await this.userRepository
-        .createQueryBuilder('user')
+        .createQueryBuilder('app_user')
         .delete()
         .where('app_user.id = :id', {id: data.id})
         .execute();
@@ -233,7 +233,7 @@ export class AppService {
     if (!secretSanta)
       throw new BadRequestException('Invalid code');
     const user = await this.userRepository
-        .createQueryBuilder('user')
+        .createQueryBuilder('app_user')
         .where('app_user.id = :id', {id: data.id})
         .getOne();
     if (!user)
