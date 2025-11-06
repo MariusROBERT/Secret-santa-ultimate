@@ -5,11 +5,11 @@
   import * as Table from '$lib/components/ui/table/index.js';
   import * as HoverCard from '$lib/components/ui/hover-card/index.js';
   import ForbiddenPopover from '$lib/components/ForbiddenPopover.svelte';
-  import { replaceState } from '$app/navigation';
+  import { goto } from '$app/navigation';
 
   let name = $state('Default title');
   let justCopied = $state(false);
-  let code = $derived(page.params.code);
+  let code = $derived(page.params.code.toUpperCase());
 
   let { data } = $props();
 
@@ -22,8 +22,8 @@
   }
 
   $effect(() => {
-    if (page.url.search)
-      replaceState(window.location.pathname.toUpperCase(), code);
+    if (code.length !== 6)
+      goto('/');
   });
 </script>
 
