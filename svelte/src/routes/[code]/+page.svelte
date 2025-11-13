@@ -7,7 +7,6 @@
   import ForbiddenPopover from '$lib/components/ForbiddenPopover.svelte';
   import { goto } from '$app/navigation';
 
-  let name = $state('Default title');
   let justCopied = $state(false);
   let code = $derived(page.params.code.toUpperCase());
 
@@ -29,7 +28,7 @@
 
 
 <div class="flex flex-col text-center items-center gap-4 m-8">
-  <h1 class="text-3xl font-bold">{name}</h1>
+  <h1 class="text-3xl font-bold">{data.name}</h1>
   <Button class="w-24" variant="ghost" onclick={copyLink}>
     {#if (justCopied)}
       Copied
