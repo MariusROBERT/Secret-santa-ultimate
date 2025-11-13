@@ -42,7 +42,7 @@
       {mailDate.toDate(getLocalTimeZone()).toLocaleDateString()}
     </Button>
     <Popover.Root bind:open={isCalendarPopoverOpen}>
-      <Popover.Trigger>Test</Popover.Trigger>
+      <Popover.Trigger />
       <Popover.Content class="w-auto mx-auto overflow-hidden p-0" align="start">
         <Calendar
           type="single"
