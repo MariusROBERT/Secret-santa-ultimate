@@ -9,7 +9,7 @@
 
   let name: string = $state('');
   let mailDate: CalendarDate = $state(today(getLocalTimeZone()).add({ weeks: 1 }));
-  let formattedMailDate = $derived(mailDate.toDate(getLocalTimeZone()));
+  let formattedMailDate = $derived(Number(mailDate.toDate(getLocalTimeZone())));
 
   let isCalendarPopoverOpen = $state(false);
 
