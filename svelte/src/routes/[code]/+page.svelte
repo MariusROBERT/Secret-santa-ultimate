@@ -6,6 +6,7 @@
   import * as HoverCard from '$lib/components/ui/hover-card/index.js';
   import ForbiddenPopover from '$lib/components/ForbiddenPopover.svelte';
   import { goto } from '$app/navigation';
+  import { Input } from '$lib/components/ui/input/index.js';
 
   let justCopied = $state(false);
   let code = $derived(page.params.code.toUpperCase());
@@ -24,6 +25,8 @@
     if (code.length !== 6)
       goto('/');
   });
+
+  let newUser = $state({ name: undefined, mail: undefined, forbidden: [] });
 </script>
 
 
@@ -40,6 +43,8 @@
 
   <div class="rounded-md border">
     <Table.Root>
+
+      <!-- Header -->
       <Table.Header>
         <Table.Row>
           <Table.Head>
@@ -58,7 +63,9 @@
           </Table.Head>
         </Table.Row>
       </Table.Header>
+
       <Table.Body>
+        <!-- Existing users -->
         {#each data.users as { name, id, email, forbidden } (id)}
           <Table.Row>
             <Table.Cell>
@@ -72,6 +79,20 @@
             </Table.Cell>
           </Table.Row>
         {/each}
+
+        <!-- New user -->
+        <Table.Row>
+          <Table.Cell>
+            <Input bind:value={newUser.name} />
+          </Table.Cell>
+          <Table.Cell>
+            <Input bind:value={newUser.mail} />
+          </Table.Cell>
+          <Table.Cell>
+            <Button>Add user</Button>
+          </Table.Cell>
+        </Table.Row>
+
       </Table.Body>
     </Table.Root>
   </div>
