@@ -13,6 +13,8 @@
 
   let { data } = $props();
 
+  let users = $state(data.users);
+
   function copyLink() {
     navigator.clipboard.writeText(window.location.toString());
     justCopied = true;
@@ -26,7 +28,19 @@
       goto('/');
   });
 
-  let newUser = $state({ name: undefined, mail: undefined, forbidden: [] });
+  let newUser = $state({ name: undefined, mail: undefined });
+
+  function addUser() {
+    if (!newUser.name || !newUser.mail)
+      return;
+    fetch(`/api/v1/santa/${page.params.code}/users`, {
+      method: 'POST',
+      body: JSON.stringify(newUser),
+    }).then(res => res.json()).then(res => {
+      newUser = { name: undefined, mail: undefined };
+      users.push(res);
+    });
+  }
 </script>
 
 
@@ -66,7 +80,7 @@
 
       <Table.Body>
         <!-- Existing users -->
-        {#each data.users as { name, id, email, forbidden } (id)}
+        {#each users as { name, id, email, forbidden } (id)}
           <Table.Row>
             <Table.Cell>
               {name}
@@ -75,7 +89,7 @@
               {email}
             </Table.Cell>
             <Table.Cell>
-              <ForbiddenPopover users={data.users} id={id} />
+              <ForbiddenPopover users={users} id={id} />
             </Table.Cell>
           </Table.Row>
         {/each}
@@ -89,7 +103,7 @@
             <Input bind:value={newUser.mail} />
           </Table.Cell>
           <Table.Cell>
-            <Button>Add user</Button>
+            <Button onclick={addUser}>Add user</Button>
           </Table.Cell>
         </Table.Row>
 
