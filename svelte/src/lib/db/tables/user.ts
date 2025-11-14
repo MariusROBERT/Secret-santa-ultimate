@@ -3,17 +3,18 @@ import { sqliteTable, text, int, type AnySQLiteColumn } from 'drizzle-orm/sqlite
 import { secretSanta } from '../schema';
 
 export const user = sqliteTable('user', {
-  id: int().primaryKey({ autoIncrement: true }),
+  id: text()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text().notNull(),
   email: text().notNull(),
-  secretSanta: int().references((): AnySQLiteColumn => secretSanta.id),
-  banList: text({ mode: 'json' })
+  secretSanta: text().references((): AnySQLiteColumn => secretSanta.id),
+  forbidden: text({ mode: 'json' })
     .notNull()
     .$type<string[]>()
     .default(
       sql`(json_array()
           )`,
-    )
-    .references((): AnySQLiteColumn => user.id),
-  giftTo: int().references((): AnySQLiteColumn => user.id),
+    ),
+  giftTo: text().references((): AnySQLiteColumn => user.id),
 });

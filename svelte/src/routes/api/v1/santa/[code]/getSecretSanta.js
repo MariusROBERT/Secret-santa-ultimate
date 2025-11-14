@@ -17,7 +17,7 @@ export async function getSecretSanta(code) {
       name: user.name,
       email: user.email,
       secretSanta: user.secretSanta,
-      forbidden: user.banList,
+      forbidden: user.forbidden,
     })
     .from(user)
     .where(eq(user.secretSanta, code));
