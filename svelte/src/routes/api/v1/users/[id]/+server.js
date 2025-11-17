@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { addForbidden } from './addForbidden.js';
+import { addForbidden } from '$lib/db/utils/users.js';
 
 /**@typedef {import('@sveltejs/kit').RequestEvent} RequestEvent*/
 

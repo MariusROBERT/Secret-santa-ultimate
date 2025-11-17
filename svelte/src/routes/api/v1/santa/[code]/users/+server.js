@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { addUsers } from './addUsers.js';
+import { addUsers } from '$lib/db/utils/secretSanta.js';
 
 /**@typedef {import('@sveltejs/kit').RequestEvent} RequestEvent*/
 
