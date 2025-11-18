@@ -1,6 +1,7 @@
 import { secretSanta, user } from '$lib/db/schema.js';
 import { db } from '$lib/db/index.js';
 import { eq } from 'drizzle-orm';
+import { sendMail } from '$lib/mailer.js';
 
 /**
  * Get secretSanta data from its code/id
@@ -64,14 +65,37 @@ export async function addUsers(santaId, email, name) {
 
 /**
  * Generate a map of <User, User> following the forbidden rules and the 1v1 rule
- * @param secretSanta {{users: {id: string, giftTo: string, forbidden: string[]}[]}}
+ * @param secretSanta {{
+ *   id: string,
+ *   name: string,
+ *   users: {
+ *     id: string,
+ *     name: string,
+ *     email: string,
+ *     giftTo: string,
+ *     forbidden: string[]
+ *   }[],
+ *   mailDate: Date
+ * }}
  * @param iteration {number}
- * @returns
+ * @returns {Map<{
+ *     id: string,
+ *     name: string,
+ *     email: string,
+ *     giftTo: string,
+ *     forbidden: string[]
+ *   }, {
+ *     id: string,
+ *     name: string,
+ *     email: string,
+ *     giftTo: string,
+ *     forbidden: string[]
+ *   }>}
  */
 export function solveSecretSanta(secretSanta, iteration = 0) {
   if (iteration > 10000) {
     // If we can't find a solution after 10000 iterations, give up
-    return null;
+    throw `Unable to find solution for ${secretSanta.name} (${secretSanta.id})`;
   }
   const remainingGiftees = [...secretSanta.users];
   const secretSantaMap = new Map();
@@ -97,4 +121,43 @@ export function solveSecretSanta(secretSanta, iteration = 0) {
   }
 
   return secretSantaMap;
+}
+
+/**
+ * Send mail to every user of the secretSanta
+ * @param secretSanta {{
+ *   id: string,
+ *   name: string,
+ *   users: {
+ *     id: string,
+ *     name: string,
+ *     email: string,
+ *     giftTo: string,
+ *     forbidden: string[]
+ *   }[],
+ *   mailDate: Date
+ * }}
+ */
+export function sendMails(secretSanta) {
+  let solution;
+  try {
+    solution = solveSecretSanta(secretSanta);
+  } catch (e) {
+    console.warn(e);
+    return;
+  }
+
+  const mailPromises = [];
+  const backupPromises = [];
+  console.log('start');
+  for (const [gifter, giftee] of solution) {
+    console.log(gifter.id, '->', giftee.id);
+    backupPromises.push(db.update(user).set({ giftTo: giftee.id }).where(eq(user.id, gifter.id)));
+    mailPromises.push(sendMail(secretSanta.name, gifter, giftee));
+  }
+  Promise.all(mailPromises).then(() => console.log('Mails sent for', secretSanta.name));
+  Promise.all(backupPromises).then(() => console.log('Backup done for', secretSanta.name));
+  Promise.all([...mailPromises, ...backupPromises]).then(() =>
+    console.log('All done for', secretSanta.name, secretSanta.id),
+  );
 }
