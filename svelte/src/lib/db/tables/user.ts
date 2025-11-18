@@ -8,7 +8,9 @@ export const user = sqliteTable('user', {
     .$defaultFn(() => crypto.randomUUID()),
   name: text().notNull(),
   email: text().notNull(),
-  secretSanta: text().references((): AnySQLiteColumn => secretSanta.id),
+  secretSanta: text()
+    .references((): AnySQLiteColumn => secretSanta.id)
+    .notNull(),
   forbidden: text({ mode: 'json' })
     .notNull()
     .$type<string[]>()
