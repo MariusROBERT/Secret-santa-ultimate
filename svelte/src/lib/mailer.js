@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { EMAIL_ADDRESS, EMAIL_PASSWORD, EMAIL_SMTP, EMAIL_PORT } from '$env/dynamic/private';
+import { env } from '$env/dynamic/private';
 
 /**
  * @param secretSantaName {string}
@@ -9,17 +9,17 @@ import { EMAIL_ADDRESS, EMAIL_PASSWORD, EMAIL_SMTP, EMAIL_PORT } from '$env/dyna
 export async function sendMail(secretSantaName, gifter, giftee) {
   // Create a test account or replace with real credentials.
   const transporter = nodemailer.createTransport({
-    host: EMAIL_SMTP,
-    port: Number(EMAIL_PORT),
-    secure: Number(EMAIL_PORT) === 465, // true for 465, false for other ports
+    host: env.EMAIL_SMTP,
+    port: Number(env.EMAIL_PORT),
+    secure: Number(env.EMAIL_PORT) === 465, // true for 465, false for other ports
     auth: {
-      user: EMAIL_ADDRESS,
-      pass: EMAIL_PASSWORD,
+      user: env.EMAIL_ADDRESS,
+      pass: env.EMAIL_PASSWORD,
     },
   });
 
   return await transporter.sendMail({
-    from: `"SecretSantaUltimate" <${EMAIL_PASSWORD}>`,
+    from: `"SecretSantaUltimate" <${env.EMAIL_PASSWORD}>`,
     to: gifter.email,
     subject: `Secret Santa: ${secretSantaName}`,
     html: `
