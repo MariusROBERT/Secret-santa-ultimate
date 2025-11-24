@@ -1,6 +1,6 @@
-import { sql } from 'drizzle-orm';
-import { sqliteTable, text, int, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
-import { secretSanta } from '../schema';
+import { relations, sql } from 'drizzle-orm';
+import { sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { secretSanta } from './secretSanta';
 
 export const user = sqliteTable('user', {
   id: text()
@@ -20,3 +20,10 @@ export const user = sqliteTable('user', {
     ),
   giftTo: text().references((): AnySQLiteColumn => user.id),
 });
+
+export const usersRelations = relations(user, ({ one }) => ({
+  santa: one(secretSanta, {
+    fields: [user.secretSanta],
+    references: [secretSanta.id],
+  }),
+}));

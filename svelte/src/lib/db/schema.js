@@ -1,4 +1,4 @@
-import { user } from './tables/user.ts';
-import { secretSanta } from './tables/secretSanta.ts';
+import { secretSanta, groupsRelations } from './tables/secretSanta.ts';
+import { user, usersRelations } from './tables/user.ts';
 
-export { user, secretSanta };
+export { secretSanta, user, groupsRelations, usersRelations };
