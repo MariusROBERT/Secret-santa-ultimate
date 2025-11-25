@@ -1,6 +1,7 @@
 import { db } from '$lib/db/index.js';
 import { user } from '$lib/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
+import { error } from '@sveltejs/kit';
 
 /**
  * Add a user to a secretSanta
@@ -12,7 +13,7 @@ export async function addForbidden(userId, forbiddenList) {
   let [updatedUser] = await db
     .update(user)
     .set({ forbidden: forbiddenList })
-    .where(eq(user.id, userId))
+    .where(and(eq(user.id, userId), isNull(user.giftTo))) // Already solved secretSanta will set giftTo column
     .returning({
       id: user.id,
       forbidden: user.forbidden,
@@ -20,6 +21,7 @@ export async function addForbidden(userId, forbiddenList) {
       email: user.email,
       secretSanta: user.secretSanta,
     });
+  if (!updatedUser) throw error(404, `User '${userId}' not found`);
 
   return updatedUser;
 }
