@@ -7,16 +7,21 @@
   let selectOpen = $state(false);
   let timer;
   let forbidden = $state(users.find((u) => u.id === id).forbidden);
+  let originalForbidden = $state(forbidden);
 
   $effect(() => {
     users.find((u) => u.id === id).forbidden = forbidden;
 
     // Debounced value
     clearTimeout(timer);
-    timer = setTimeout(() => fetch(`/api/v1/users/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ forbidden }),
-    }), 750);
+    timer = setTimeout(() => {
+      if (JSON.stringify(originalForbidden.sort()) === JSON.stringify(forbidden.sort())) // Deep equal ignoring order
+        return;
+      fetch(`/api/v1/users/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ forbidden }),
+      }).then(() => originalForbidden = forbidden);
+    }, 750);
   });
 </script>
 
