@@ -7,11 +7,11 @@ import { error } from '@sveltejs/kit';
 /**
  * Get secretSanta data from its code/id
  * @param {string} code
- * @return {Promise<{ id: string, name: string, mailDate: Date, users: any[]} | undefined>}
+ * @return {Promise<{ id: string, name: string, mailDate: number, users: any[]}>}
  */
 export async function getSecretSanta(code) {
   let [santa] = await db.select().from(secretSanta).where(eq(secretSanta.id, code));
-  if (!santa) return undefined;
+  if (!santa) throw error(404, `Secret santa '${code}' not found`);
 
   const users = await db
     .select({
@@ -23,7 +23,7 @@ export async function getSecretSanta(code) {
     })
     .from(user)
     .where(eq(user.secretSanta, code));
-  return { users: users, ...santa };
+  return { users: users, ...santa, mailDate: Number(santa.mailDate) };
 }
 
 /**
