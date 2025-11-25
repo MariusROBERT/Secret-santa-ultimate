@@ -19,7 +19,7 @@ export async function sendMail(secretSantaName, gifter, giftee) {
   });
 
   return await transporter.sendMail({
-    from: `"SecretSantaUltimate" <${env.EMAIL_PASSWORD}>`,
+    from: `"SecretSantaUltimate" <${env.EMAIL_ADDRESS}>`,
     to: gifter.email,
     subject: `Secret Santa: ${secretSantaName}`,
     html: `
