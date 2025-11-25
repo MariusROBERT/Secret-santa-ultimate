@@ -41,6 +41,16 @@
       users.push(res);
     });
   }
+
+  function deleteUser(id) {
+    fetch(`/api/v1/users/${id}`, {
+      method: 'DELETE',
+    }).then(res => res.json())
+      .then(res => {
+        if (res.id === id)
+          users = users.filter((user) => user.id !== id);
+      });
+  }
 </script>
 
 
@@ -81,7 +91,7 @@
       <Table.Body>
         <!-- Existing users -->
         {#each users as { name, id, email, forbidden } (id)}
-          <Table.Row>
+          <Table.Row class="group">
             <Table.Cell>
               {name}
             </Table.Cell>
@@ -90,6 +100,11 @@
             </Table.Cell>
             <Table.Cell>
               <ForbiddenPopover users={users} id={id} />
+            </Table.Cell>
+            <Table.Cell class="px-0 group-hover:opacity-100 opacity-0">
+              <Button onclick={() => deleteUser(id)}>
+                X
+              </Button>
             </Table.Cell>
           </Table.Row>
         {/each}

@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { addForbidden } from '$lib/db/utils/users.js';
+import { addForbidden, deleteUser } from '$lib/db/utils/users.js';
 
 /**@typedef {import('@sveltejs/kit').RequestEvent} RequestEvent*/
 
@@ -13,6 +13,19 @@ export async function PATCH({ request, params }) {
   if (!forbidden || !id) throw error(422, { message: 'missing fields' });
 
   const user = await addForbidden(id, forbidden);
+
+  return json(user);
+}
+
+/**
+ * Delete user
+ * @param _ {RequestEvent}
+ */
+export async function DELETE({ params }) {
+  const { id } = params;
+  if (!id) throw error(422, { message: 'missing fields' });
+
+  const user = await deleteUser(id);
 
   return json(user);
 }
