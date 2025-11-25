@@ -1,7 +1,8 @@
 import { secretSanta, user } from '$lib/db/schema.js';
 import { db } from '$lib/db/index.js';
-import { eq } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import { sendMail } from '$lib/mailer.js';
+import { error } from '@sveltejs/kit';
 
 /**
  * Get secretSanta data from its code/id
@@ -158,4 +159,31 @@ export function sendMails(secretSanta) {
   Promise.all([...mailPromises, ...backupPromises]).then(() =>
     console.log('All done for', secretSanta.name, secretSanta.id),
   );
+}
+
+/**
+ * Update secret santa room data
+ * @param id {string}
+ * @param newData {{mailDate: number | undefined, name: string | undefined}}
+ * @return Promise<object>
+ */
+export async function updateSecretSanta(id, newData) {
+  let filteredData = {};
+
+  if (newData.mailDate && new Date(newData.mailDate) > new Date())
+    filteredData.mailDate = new Date(newData.mailDate);
+  if (newData.name && newData.name.trim().length > 0) filteredData.name = newData.name;
+
+  if (Object.keys(filteredData).length === 0) throw error(422, 'Invalid new data');
+
+  const now = new Date();
+  let [updatedSanta] = await db
+    .update(secretSanta)
+    .set(filteredData)
+    .where(and(eq(secretSanta.id, id), gt(secretSanta.mailDate, now)))
+    .returning();
+
+  if (!updatedSanta) throw error(404, `Secret santa '${id}' not found`);
+
+  return { ...updatedSanta, mailDate: Number(updatedSanta.mailDate) };
 }
