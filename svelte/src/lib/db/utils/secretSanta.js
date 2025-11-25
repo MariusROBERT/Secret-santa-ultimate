@@ -72,7 +72,6 @@ export async function addUsers(santaId, email, name) {
  *     id: string,
  *     name: string,
  *     email: string,
- *     giftTo: string,
  *     forbidden: string[]
  *   }[],
  *   mailDate: Date
@@ -93,7 +92,7 @@ export async function addUsers(santaId, email, name) {
  *   }>}
  */
 export function solveSecretSanta(secretSanta, iteration = 0) {
-  if (iteration > 10000) {
+  if (iteration > 1000) {
     // If we can't find a solution after 10000 iterations, give up
     throw `Unable to find solution for ${secretSanta.name} (${secretSanta.id})`;
   }
@@ -132,7 +131,6 @@ export function solveSecretSanta(secretSanta, iteration = 0) {
  *     id: string,
  *     name: string,
  *     email: string,
- *     giftTo: string,
  *     forbidden: string[]
  *   }[],
  *   mailDate: Date
