@@ -5,6 +5,7 @@
   import * as Table from '$lib/components/ui/table/index.js';
   import * as HoverCard from '$lib/components/ui/hover-card/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
+  import * as Rename from '$lib/components/ui/rename/index.ts';
   import ForbiddenPopover from '$lib/components/ForbiddenPopover.svelte';
   import { goto } from '$app/navigation';
   import { Input } from '$lib/components/ui/input/index.js';
@@ -20,6 +21,9 @@
 
   let users = $state(data.users);
   let mailDate = $state(fromDate(new Date(data.mailDate)));
+  let name = $state(data.name);
+  /**@type {'edit' | 'view'}*/
+  let mode = $state('view');
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.toString());
@@ -73,11 +77,41 @@
       }).then(() => originalMailDate = mailDate);
     }, 750);
   }
+
+  function updateName(newName) {
+    fetch(`/api/v1/santa/${code}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name: newName }),
+    });
+  }
 </script>
 
+<div class="flex flex-col text-center items-center gap-4 m-8 max-w-[95vw]">
+  <div class="flex gap-2 group">
+    <Rename.Provider>
+      <Rename.Root
+        this="span"
+        bind:value={name}
+        bind:mode
+        validate={(value) => value.length > 0}
+        class="w-fit text-3xl font-bold"
+        onSave={(value) => {
+          if (value !== name)
+            updateName(value);
+          return true;
+        }}
+      />
+      <div class="flex place-items-center gap-2">
+        {#if mode === 'edit'}
+          <Rename.Save size="sm" />
+          <Rename.Cancel size="sm" />
+        {:else}
+          <Rename.Edit size="sm" class="sm:opacity-0 group-hover:opacity-100" />
+        {/if}
+      </div>
+    </Rename.Provider>
+  </div>
 
-<div class="flex flex-col text-center items-center gap-4 m-8">
-  <h1 class="text-3xl font-bold">{data.name}</h1>
   <Button class="w-24" variant="ghost" onclick={copyLink}>
     {#if (justCopied)}
       Copied
