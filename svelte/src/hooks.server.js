@@ -6,7 +6,7 @@ import { sendMails } from '@/db/utils/secretSanta.js';
 // Everyday at 8AM
 scheduleJob('0 8 * * *', async () => {
   const today = new Date(new Date().setHours(0, 0, 0, 0));
-  const tomorrow = new Date(Number(today) + 100 * 24 * 3_600 * 1_000);
+  const tomorrow = new Date(Number(today) + 24 * 3_600 * 1_000);
 
   const todaySecretSanta = await db.query.secretSanta.findMany({
     with: {
