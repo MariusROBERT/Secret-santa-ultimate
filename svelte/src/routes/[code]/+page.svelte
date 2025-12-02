@@ -6,6 +6,7 @@
   import * as HoverCard from '$lib/components/ui/hover-card/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as Rename from '$lib/components/ui/rename/index.ts';
+  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import ForbiddenPopover from '$lib/components/ForbiddenPopover.svelte';
   import { goto } from '$app/navigation';
   import { Input } from '$lib/components/ui/input/index.js';
@@ -24,6 +25,9 @@
   let name = $state(data.name);
   /**@type {'edit' | 'view'}*/
   let mode = $state('view');
+
+  let confirmDeleteOpen = $state(false);
+  let selectedDelete = $state({})
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.toString());
@@ -52,8 +56,8 @@
     });
   }
 
-  function deleteUser(id) {
-    fetch(`/api/v1/users/${id}`, {
+  function deleteUser() {
+    fetch(`/api/v1/users/${selectedDelete.id}`, {
       method: 'DELETE',
     }).then(res => res.json())
       .then(res => {
@@ -83,7 +87,13 @@
       method: 'PATCH',
       body: JSON.stringify({ name: newName }),
     });
+    confirmDeleteOpen = false
   }
+
+  $effect(() => {
+    if (!confirmDeleteOpen)
+      selectedDelete = {}
+  })
 </script>
 
 <div class="flex flex-col text-center items-center gap-4 sm:m-8 max-w-[95vw]">
@@ -185,8 +195,11 @@
             <Table.Cell>
               <ForbiddenPopover users={users} id={id} />
             </Table.Cell>
-              <Button onclick={() => deleteUser(id)}>
             <Table.Cell class="px-0 pr-1 group-hover:opacity-100 lg:opacity-0">
+              <Button onclick={() => {
+                confirmDeleteOpen = true;
+                selectedDelete = {name, id};
+              }}>
                 X
               </Button>
             </Table.Cell>
@@ -210,5 +223,17 @@
     </Table.Root>
   </div>
 </div>
+
+<AlertDialog.Root bind:open={confirmDeleteOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Are you sure to delete {selectedDelete.name} ?</AlertDialog.Title>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel onclick={() => selectedDelete = {}}>Cancel</AlertDialog.Cancel>
+      <AlertDialog.Action onclick={deleteUser}>Delete</AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
 
 
