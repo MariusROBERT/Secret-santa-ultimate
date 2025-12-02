@@ -86,7 +86,7 @@
   }
 </script>
 
-<div class="flex flex-col text-center items-center gap-4 m-8 max-w-[95vw]">
+<div class="flex flex-col text-center items-center gap-4 sm:m-8 max-w-[95vw]">
   <div class="flex gap-2 group">
     <Rename.Provider>
       <Rename.Root
@@ -149,7 +149,7 @@
     </Popover.Root>
   </div>
 
-  <div class="rounded-md border">
+  <div class="rounded-md border max-w-full">
     <Table.Root>
 
       <!-- Header -->
@@ -161,7 +161,7 @@
           <Table.Head>
             Mail
           </Table.Head>
-          <Table.Head>
+          <Table.Head colspan={2}>
             <HoverCard.Root>
               <HoverCard.Trigger>Forbidden</HoverCard.Trigger>
               <HoverCard.Content>
@@ -172,21 +172,21 @@
         </Table.Row>
       </Table.Header>
 
-      <Table.Body>
+      <Table.Body class="max-w-full">
         <!-- Existing users -->
-        {#each users as { name, id, email, forbidden } (id)}
-          <Table.Row class="group">
-            <Table.Cell>
+        {#each users as {name, id, email, forbidden} (id)}
+          <Table.Row class="group max-w-full">
+            <Table.Cell class="text-ellipsis max-w-full">
               {name}
             </Table.Cell>
-            <Table.Cell>
+            <Table.Cell class="text-ellipsis overflow-hidden max-w-full">
               {email}
             </Table.Cell>
             <Table.Cell>
               <ForbiddenPopover users={users} id={id} />
             </Table.Cell>
-            <Table.Cell class="px-0 group-hover:opacity-100 opacity-0">
               <Button onclick={() => deleteUser(id)}>
+            <Table.Cell class="px-0 pr-1 group-hover:opacity-100 lg:opacity-0">
                 X
               </Button>
             </Table.Cell>
@@ -201,7 +201,7 @@
           <Table.Cell>
             <Input bind:value={newUser.mail} />
           </Table.Cell>
-          <Table.Cell>
+          <Table.Cell colspan={2}>
             <Button onclick={addUser}>Add user</Button>
           </Table.Cell>
         </Table.Row>
