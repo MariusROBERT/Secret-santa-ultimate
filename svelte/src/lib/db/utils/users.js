@@ -1,7 +1,9 @@
-import { db } from '$lib/db/index.js';
+import { getDb } from '$lib/db/index.js';
 import { user } from '$lib/db/schema.js';
 import { and, eq, isNull } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
+
+const db = getDb()
 
 /**
  * Add a user to a secretSanta

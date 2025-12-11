@@ -1,7 +1,9 @@
 import { scheduleJob } from 'node-schedule';
-import { db } from '@/db/index.js';
+import { getDb} from '@/db/index.js';
 import { gt, lt } from 'drizzle-orm';
 import { sendMails } from '@/db/utils/secretSanta.js';
+
+const db = getDb()
 
 // Everyday at 8AM
 scheduleJob('0 8 * * *', async () => {
