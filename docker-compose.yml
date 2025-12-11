@@ -6,6 +6,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3002:3000"
-    #    volumes: #Optional
-    #      - ./secretSantaUltimate.sql:/app/secretSantaUltimate.sql
+    volumes:
+      - santa-db:/app/data
     restart: always
+
+volumes:
+  santa-db:
+
