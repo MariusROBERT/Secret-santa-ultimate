@@ -1,8 +1,10 @@
 import { secretSanta, user } from '$lib/db/schema.js';
-import { db } from '$lib/db/index.js';
+import { getDb } from '$lib/db/index.js';
 import { and, eq, gt } from 'drizzle-orm';
 import { sendMail } from '$lib/mailer.js';
 import { error } from '@sveltejs/kit';
+
+const db = getDb()
 
 /**
  * Get secretSanta data from its code/id
