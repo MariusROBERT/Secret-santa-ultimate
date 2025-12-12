@@ -12,6 +12,7 @@
   import { fromDate, getLocalTimeZone, today } from '@internationalized/date';
   import { Calendar } from '@/components/ui/calendar/index.js';
   import { Label } from '@/components/ui/label/index.js';
+  import { ConfirmDeleteDialog, confirmDelete } from '$lib/components/ui/confirm-delete-dialog/index.js';
 
   let justCopied = $state(false);
   let code = $derived(page.params.code.toUpperCase());
@@ -186,7 +187,15 @@
               <ForbiddenPopover users={users} id={id} />
             </Table.Cell>
             <Table.Cell class="px-1 group-hover:opacity-100 sm:opacity-0">
-              <Button onclick={() => deleteUser(id)}>
+              <Button
+                      onclick={() => {
+                        confirmDelete({
+                          title: 'Delete',
+                          description: `Are you sure you want to delete ${name} ?`,
+                          onConfirm: async () => (deleteUser(id))
+                        });
+                      }}
+              >
                 X
               </Button>
             </Table.Cell>
@@ -211,4 +220,4 @@
   </div>
 </div>
 
-
+<ConfirmDeleteDialog />
