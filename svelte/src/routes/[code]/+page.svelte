@@ -13,6 +13,7 @@
   import { Calendar } from '@/components/ui/calendar/index.js';
   import { Label } from '@/components/ui/label/index.js';
   import { ConfirmDeleteDialog, confirmDelete } from '$lib/components/ui/confirm-delete-dialog/index.js';
+  import { z } from 'zod';
 
   let justCopied = $state(false);
   let code = $derived(page.params.code.toUpperCase());
@@ -39,9 +40,29 @@
       goto('/');
   });
 
+  const newUserSchema = z.object({
+      name: z.string().min(1),
+      mail: z.email(),
+  })
   let newUser = $state({ name: undefined, mail: undefined });
+  let newUserValid = $derived.by(() => {
+      try {
+          newUserSchema.parse({name: newUser.name, mail: newUser.mail});
+          return newUser
+      } catch {
+          return null
+      }
+  })
+  let errorMessage = $state('')
 
   function addUser() {
+    try {
+        newUserSchema.parse(newUser);
+        errorMessage = ''
+    } catch (e) {
+        errorMessage = JSON.parse(e.message)[0].message;
+        return
+    }
     if (!newUser.name || !newUser.mail)
       return;
     fetch(`/api/v1/santa/${page.params.code}/users`, {
@@ -175,7 +196,7 @@
 
       <Table.Body>
         <!-- Existing users -->
-        {#each users as { name, id, email, forbidden } (id)}
+        {#each users as { name, id, email } (id)}
           <Table.Row class="group">
             <Table.Cell class="max-w-[30vw] truncate">
               {name}
@@ -211,13 +232,14 @@
             <Input bind:value={newUser.mail} />
           </Table.Cell>
           <Table.Cell colspan="2">
-            <Button onclick={addUser}>Add user</Button>
+            <Button disabled={!newUserValid} onclick={addUser}>Add user</Button>
           </Table.Cell>
         </Table.Row>
 
       </Table.Body>
     </Table.Root>
   </div>
+  <p class="absolute bottom-0 text-sm text-red-500">{errorMessage}</p>
 </div>
 
 <ConfirmDeleteDialog />
