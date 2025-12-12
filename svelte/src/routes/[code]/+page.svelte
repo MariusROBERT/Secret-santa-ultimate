@@ -86,7 +86,7 @@
   }
 </script>
 
-<div class="flex flex-col text-center items-center gap-4 m-8 max-w-[95vw]">
+<div class="flex flex-col text-center items-center gap-4 sm:m-8 max-w-[95vw]">
   <div class="flex gap-2 group">
     <Rename.Provider>
       <Rename.Root
@@ -94,7 +94,7 @@
         bind:value={name}
         bind:mode
         validate={(value) => value.length > 0}
-        class="w-fit text-3xl font-bold"
+        class="w-fit max-w-[40vw] truncate text-3xl font-bold"
         onSave={(value) => {
           if (value !== name)
             updateName(value);
@@ -161,9 +161,9 @@
           <Table.Head>
             Mail
           </Table.Head>
-          <Table.Head>
+          <Table.Head colspan="2">
             <HoverCard.Root>
-              <HoverCard.Trigger>Forbidden</HoverCard.Trigger>
+              <HoverCard.Trigger class="px-0 m-0">Forbidden</HoverCard.Trigger>
               <HoverCard.Content>
                 A list of user this user won't be able to gift
               </HoverCard.Content>
@@ -176,16 +176,16 @@
         <!-- Existing users -->
         {#each users as { name, id, email, forbidden } (id)}
           <Table.Row class="group">
-            <Table.Cell>
+            <Table.Cell class="max-w-[30vw] truncate">
               {name}
             </Table.Cell>
-            <Table.Cell>
+            <Table.Cell class="max-w-[30vw] truncate">
               {email}
             </Table.Cell>
             <Table.Cell>
               <ForbiddenPopover users={users} id={id} />
             </Table.Cell>
-            <Table.Cell class="px-0 group-hover:opacity-100 opacity-0">
+            <Table.Cell class="px-1 group-hover:opacity-100 sm:opacity-0">
               <Button onclick={() => deleteUser(id)}>
                 X
               </Button>
@@ -201,7 +201,7 @@
           <Table.Cell>
             <Input bind:value={newUser.mail} />
           </Table.Cell>
-          <Table.Cell>
+          <Table.Cell colspan="2">
             <Button onclick={addUser}>Add user</Button>
           </Table.Cell>
         </Table.Row>
