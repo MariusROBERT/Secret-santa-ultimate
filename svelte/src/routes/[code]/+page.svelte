@@ -165,7 +165,7 @@
             isCalendarPopoverOpen = false;
             updateMailDate();
           }}
-          minValue={today(getLocalTimeZone())}
+          minValue={today(getLocalTimeZone()).add({days: 1})}
         />
       </Popover.Content>
     </Popover.Root>
