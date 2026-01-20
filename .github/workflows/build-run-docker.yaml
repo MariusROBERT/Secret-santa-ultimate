@@ -1,0 +1,60 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# GitHub recommends pinning actions to a commit SHA.
+# To get a newer version, you will need to update the SHA.
+# You can also reference a tag or branch, but the action may change without warning.
+
+name: Build and Run Docker image
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_run_docker:
+    name: Build and run docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Build Docker image
+        run: |
+          docker build -t secret-santa-ultimate:${{ github.run_id }} .
+
+      - name: Run container
+        run: |
+          docker run -d --name secret-santa-ultimate secret-santa-ultimate:${{ github.run_id }}
+
+      - name: Check container status
+        run: |
+          ATTEMPTS=5
+          INTERVAL=30
+          
+          for ((i=1; i<=ATTEMPTS; i++)); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' secret-santa-ultimate)
+            echo "Attempt $i/$ATTEMPTS — status: $STATUS"
+      
+            if [ "$STATUS" = "healthy" ]; then
+              exit 0
+            fi
+      
+            if [ "$STATUS" = "unhealthy" ]; then
+              docker logs my-app
+              exit 1
+            fi
+      
+            if [ "$i" -lt "$ATTEMPTS" ]; then
+              sleep $INTERVAL
+            fi
+          done
+
+      - name: Cleanup image
+        if: always()
+        run: docker rmi -f secret-santa-ultimate:${{ github.run_id }}
