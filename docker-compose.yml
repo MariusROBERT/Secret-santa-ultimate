@@ -1,6 +1,6 @@
 services:
   secret-santa:
-    container_name: front
+    container_name: secret-santa
     build:
       context: .
       dockerfile: Dockerfile
