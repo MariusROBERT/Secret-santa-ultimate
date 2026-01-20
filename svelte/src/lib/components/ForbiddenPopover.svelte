@@ -25,8 +25,8 @@
   });
 </script>
 
-<Select.Root type="multiple" bind:open={selectOpen} bind:value={forbidden}>
-  <Select.Trigger disabled={users.length === 1}>
+<Select.Root disabled={users.length < 3} type="multiple" bind:open={selectOpen} bind:value={forbidden}>
+  <Select.Trigger>
     <Menu />
   </Select.Trigger>
   <Select.Content>
