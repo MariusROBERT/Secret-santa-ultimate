@@ -6,13 +6,14 @@
   import * as HoverCard from '$lib/components/ui/hover-card/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as Rename from '$lib/components/ui/rename/index.ts';
-  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import ForbiddenPopover from '$lib/components/ForbiddenPopover.svelte';
   import { goto } from '$app/navigation';
   import { Input } from '$lib/components/ui/input/index.js';
   import { fromDate, getLocalTimeZone, today } from '@internationalized/date';
   import { Calendar } from '@/components/ui/calendar/index.js';
   import { Label } from '@/components/ui/label/index.js';
+  import { ConfirmDeleteDialog, confirmDelete } from '$lib/components/ui/confirm-delete-dialog/index.js';
+  import { z } from 'zod';
 
   let justCopied = $state(false);
   let code = $derived(page.params.code.toUpperCase());
@@ -25,9 +26,6 @@
   let name = $state(data.name);
   /**@type {'edit' | 'view'}*/
   let mode = $state('view');
-
-  let confirmDeleteOpen = $state(false);
-  let selectedDelete = $state({})
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.toString());
@@ -42,9 +40,29 @@
       goto('/');
   });
 
+  const newUserSchema = z.object({
+      name: z.string().min(1),
+      mail: z.email(),
+  })
   let newUser = $state({ name: undefined, mail: undefined });
+  let newUserValid = $derived.by(() => {
+      try {
+          newUserSchema.parse({name: newUser.name, mail: newUser.mail});
+          return newUser
+      } catch {
+          return null
+      }
+  })
+  let errorMessage = $state('')
 
   function addUser() {
+    try {
+        newUserSchema.parse(newUser);
+        errorMessage = ''
+    } catch (e) {
+        errorMessage = JSON.parse(e.message)[0].message;
+        return
+    }
     if (!newUser.name || !newUser.mail)
       return;
     fetch(`/api/v1/santa/${page.params.code}/users`, {
@@ -56,8 +74,8 @@
     });
   }
 
-  function deleteUser() {
-    fetch(`/api/v1/users/${selectedDelete.id}`, {
+  function deleteUser(id) {
+    fetch(`/api/v1/users/${id}`, {
       method: 'DELETE',
     }).then(res => res.json())
       .then(res => {
@@ -87,13 +105,7 @@
       method: 'PATCH',
       body: JSON.stringify({ name: newName }),
     });
-    confirmDeleteOpen = false
   }
-
-  $effect(() => {
-    if (!confirmDeleteOpen)
-      selectedDelete = {}
-  })
 </script>
 
 <div class="flex flex-col text-center items-center gap-4 sm:m-8 max-w-[95vw]">
@@ -104,7 +116,7 @@
         bind:value={name}
         bind:mode
         validate={(value) => value.length > 0}
-        class="w-fit text-3xl font-bold"
+        class="w-fit max-w-[40vw] truncate text-3xl font-bold"
         onSave={(value) => {
           if (value !== name)
             updateName(value);
@@ -173,7 +185,7 @@
           </Table.Head>
           <Table.Head colspan={2}>
             <HoverCard.Root>
-              <HoverCard.Trigger>Forbidden</HoverCard.Trigger>
+              <HoverCard.Trigger class="px-0 m-0">Forbidden</HoverCard.Trigger>
               <HoverCard.Content>
                 A list of user this user won't be able to gift
               </HoverCard.Content>
@@ -184,22 +196,27 @@
 
       <Table.Body class="max-w-full">
         <!-- Existing users -->
-        {#each users as {name, id, email, forbidden} (id)}
-          <Table.Row class="group max-w-full">
-            <Table.Cell class="text-ellipsis max-w-full">
+        {#each users as { name, id, email } (id)}
+          <Table.Row class="group">
+            <Table.Cell class="max-w-[30vw] truncate">
               {name}
             </Table.Cell>
-            <Table.Cell class="text-ellipsis overflow-hidden max-w-full">
+            <Table.Cell class="max-w-[30vw] truncate">
               {email}
             </Table.Cell>
             <Table.Cell>
               <ForbiddenPopover users={users} id={id} />
             </Table.Cell>
-            <Table.Cell class="px-0 pr-1 group-hover:opacity-100 lg:opacity-0">
-              <Button onclick={() => {
-                confirmDeleteOpen = true;
-                selectedDelete = {name, id};
-              }}>
+            <Table.Cell class="px-1 group-hover:opacity-100 sm:opacity-0">
+              <Button
+                      onclick={() => {
+                        confirmDelete({
+                          title: 'Delete',
+                          description: `Are you sure you want to delete ${name} ?`,
+                          onConfirm: async () => (deleteUser(id))
+                        });
+                      }}
+              >
                 X
               </Button>
             </Table.Cell>
@@ -215,25 +232,14 @@
             <Input bind:value={newUser.mail} />
           </Table.Cell>
           <Table.Cell colspan={2}>
-            <Button onclick={addUser}>Add user</Button>
+            <Button disabled={!newUserValid} onclick={addUser}>Add user</Button>
           </Table.Cell>
         </Table.Row>
 
       </Table.Body>
     </Table.Root>
   </div>
+  <p class="absolute bottom-0 text-sm text-red-500">{errorMessage}</p>
 </div>
 
-<AlertDialog.Root bind:open={confirmDeleteOpen}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Are you sure to delete {selectedDelete.name} ?</AlertDialog.Title>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel onclick={() => selectedDelete = {}}>Cancel</AlertDialog.Cancel>
-      <AlertDialog.Action onclick={deleteUser}>Delete</AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
-
-
+<ConfirmDeleteDialog />

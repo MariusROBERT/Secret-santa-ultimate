@@ -9,14 +9,14 @@
   let santaCode = $state('');
 </script>
 
-<div class="flex sm:flex-row flex-col justify-evenly items-center gap-8 m-2 ">
+<div class="flex flex-col sm:flex-row justify-evenly items-center gap-8 sm:m-2">
   <h1 class="mb-2 p-2 font-bold text-4xl text-center">Welcome to <br/> Secret Santa</h1>
   <div class="flex flex-col items-center">
-    <Card.Root class="flex gap-6 flex-col items-center p-8">
+    <Card.Root class="flex gap-6 flex-col items-center p-4 sm:p-8">
       <h2 class="text-3xl font-medium">Got a link ?</h2>
       <InputOTP.Root maxlength={6} pattern={REGEXP_ONLY_DIGITS_AND_CHARS} bind:value={santaCode} >
         {#snippet children({ cells })}
-          {#each cells as cell}
+          {#each cells as cell, i (i)}
             <InputOTP.Group>
               <InputOTP.Slot {cell} />
             </InputOTP.Group>

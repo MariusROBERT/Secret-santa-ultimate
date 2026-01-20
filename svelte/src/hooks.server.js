@@ -1,5 +1,5 @@
 import { scheduleJob } from 'node-schedule';
-import { getDb} from '@/db/index.js';
+import { getDb } from '@/db/index.js';
 import { gt, lt } from 'drizzle-orm';
 import { sendMails } from '@/db/utils/secretSanta.js';
 
