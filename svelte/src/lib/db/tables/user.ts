@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, int, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { secretSanta } from './secretSanta';
 
 export const user = sqliteTable('user', {
@@ -19,6 +19,7 @@ export const user = sqliteTable('user', {
           )`,
     ),
   giftTo: text().references((): AnySQLiteColumn => user.id),
+	createdAt: int({ mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 export const usersRelations = relations(user, ({ one }) => ({
