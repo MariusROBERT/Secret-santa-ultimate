@@ -34,8 +34,8 @@ jobs:
 
       - name: Check container status
         run: |
-          ATTEMPTS=5
-          INTERVAL=30
+          ATTEMPTS=12
+          INTERVAL=10
           
           for ((i=1; i<=ATTEMPTS; i++)); do
             STATUS=$(docker inspect --format='{{.State.Health.Status}}' secret-santa-ultimate)
