@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -8,6 +8,7 @@ import { createClient } from '@libsql/client';
 
 const directory = await mkdtemp(join(tmpdir(), 'secret-santa-migrations-'));
 const appDir = fileURLToPath(new URL('.', import.meta.url));
+const journal = JSON.parse(await readFile(new URL('./drizzle/meta/_journal.json', import.meta.url)));
 
 try {
   for (const legacy of [false, true]) {
@@ -29,7 +30,7 @@ try {
 
     client = createClient({ url });
     const migrations = await client.execute('SELECT count(*) AS count FROM `__drizzle_migrations`');
-    assert.equal(Number(migrations.rows[0].count), 1);
+    assert.equal(Number(migrations.rows[0].count), journal.entries.length);
     const groups = await client.execute('SELECT count(*) AS count FROM `secret_santa`');
     assert.equal(Number(groups.rows[0].count), Number(legacy));
     if (legacy) {

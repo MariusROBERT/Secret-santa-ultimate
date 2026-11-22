@@ -1,10 +1,12 @@
 import { secretSanta as secretSantaTable, user } from '$lib/db/schema.js';
 import { getDb } from '$lib/db/index.js';
-import { and, eq, gt, lte } from 'drizzle-orm';
+import { and, eq, gt, lte, or } from 'drizzle-orm';
 import { sendMail } from '$lib/mailer.js';
 import { error } from '@sveltejs/kit';
 
 const db = getDb();
+export const MAIL_LEASE_MS = 15 * 60 * 1000;
+export const MAIL_RETRY_DELAY_MS = 5 * 60 * 1000;
 
 /**
  * Get secretSanta data from its code/id
@@ -76,6 +78,9 @@ export class UnsatisfiableSecretSantaError extends Error {
 }
 
 /** @typedef {{ id: string, name: string, email: string, forbidden?: string[] }} SecretSantaUser */
+/** @typedef {SecretSantaUser & { giftTo: string | null, mailSentAt: Date | null }} SecretSantaMailUser */
+/** @typedef {'pending' | 'sending' | 'failed' | 'sent' | 'impossible'} MailStatus */
+/** @typedef {{ id: string, name: string, mailDate: Date, mailStatus: MailStatus, mailStartedAt: Date | null, users: SecretSantaMailUser[] }} SecretSantaMailJob */
 
 /** @template T @param {T[]} items @returns {T[]} */
 function shuffle(items) {
@@ -162,38 +167,98 @@ export function solveSecretSanta(secretSanta) {
 }
 
 /**
- * Send mail to every user of the secretSanta
- * @param {{ id: string, name: string, users: SecretSantaUser[] }} secretSanta
- * @returns {Promise<void>} Returns without side effects when the constraints are unsatisfiable.
+ * Send a due group's emails, resuming unsent recipients on retries. Reclaims
+ * failed jobs after the retry delay and stale jobs after the lease expires.
+ * Marks the group impossible if no valid assignment exists.
+ * @param {SecretSantaMailJob} secretSanta
+ * @returns {Promise<void>}
  */
 export async function sendMails(secretSanta) {
-  const [claimed] = await db.update(secretSantaTable).set({ mailStatus: 'sending' })
-    .where(and(eq(secretSantaTable.id, secretSanta.id), eq(secretSantaTable.mailStatus, 'pending'), lte(secretSantaTable.mailDate, new Date())))
+  const now = new Date();
+  const leaseExpiredAt = new Date(now.getTime() - MAIL_LEASE_MS);
+  const retryAfter = new Date(now.getTime() - MAIL_RETRY_DELAY_MS);
+
+  const [claimed] = await db
+    .update(secretSantaTable)
+    .set({
+      mailStatus: 'sending',
+      mailStartedAt: now,
+    })
+    .where(
+      and(
+        eq(secretSantaTable.id, secretSanta.id),
+        lte(secretSantaTable.mailDate, now),
+        or(
+          eq(secretSantaTable.mailStatus, 'pending'),
+          and(
+            eq(secretSantaTable.mailStatus, 'failed'),
+            lte(secretSantaTable.mailStartedAt, retryAfter),
+          ),
+          and(
+            eq(secretSantaTable.mailStatus, 'sending'),
+            lte(secretSantaTable.mailStartedAt, leaseExpiredAt),
+          ),
+        ),
+      ),
+    )
     .returning({ id: secretSantaTable.id });
   if (!claimed) return;
+  if (secretSanta.mailStatus === 'sending' || secretSanta.mailStatus === 'failed') {
+    console.warn(
+      `Retrying mail delivery for ${secretSanta.name} (${secretSanta.id}); previous status: ${secretSanta.mailStatus}`,
+    );
+  }
 
+  const users = await db.select().from(user).where(eq(user.secretSanta, secretSanta.id));
+  /** @type {Map<any, any>}*/
   let solution;
   try {
-    solution = solveSecretSanta(secretSanta);
+    const existingAssignments = users.map((gifter) => [
+      gifter,
+      users.find(({ id }) => id === gifter.giftTo),
+    ]);
+    if (existingAssignments.every(([, giftee]) => giftee)) {
+      solution = new Map(existingAssignments);
+    } else {
+      solution = solveSecretSanta({ ...secretSanta, users });
+      await db.transaction(async (tx) => {
+        for (const [gifter, giftee] of solution) {
+          await tx.update(user).set({ giftTo: giftee.id }).where(eq(user.id, gifter.id));
+        }
+      });
+    }
   } catch (e) {
     console.warn(e);
     if (e instanceof UnsatisfiableSecretSantaError) {
-      await db.update(secretSantaTable).set({ mailStatus: 'impossible' }).where(eq(secretSantaTable.id, secretSanta.id));
+      await db
+        .update(secretSantaTable)
+        .set({ mailStatus: 'impossible' })
+        .where(eq(secretSantaTable.id, secretSanta.id));
       return;
     }
-    await db.update(secretSantaTable).set({ mailStatus: 'failed' }).where(eq(secretSantaTable.id, secretSanta.id));
+    await db
+      .update(secretSantaTable)
+      .set({ mailStatus: 'failed' })
+      .where(eq(secretSantaTable.id, secretSanta.id));
     return;
   }
 
   try {
     for (const [gifter, giftee] of solution) {
-      await db.update(user).set({ giftTo: giftee.id }).where(eq(user.id, gifter.id));
+      if (gifter.mailSentAt) continue;
       await sendMail(secretSanta.name, gifter, giftee);
+      await db.update(user).set({ mailSentAt: new Date() }).where(eq(user.id, gifter.id));
     }
-    await db.update(secretSantaTable).set({ mailStatus: 'sent' }).where(eq(secretSantaTable.id, secretSanta.id));
+    await db
+      .update(secretSantaTable)
+      .set({ mailStatus: 'sent' })
+      .where(eq(secretSantaTable.id, secretSanta.id));
     console.log('Mails sent for', secretSanta.name, secretSanta.id);
   } catch (e) {
-    await db.update(secretSantaTable).set({ mailStatus: 'failed' }).where(eq(secretSantaTable.id, secretSanta.id));
+    await db
+      .update(secretSantaTable)
+      .set({ mailStatus: 'failed' })
+      .where(eq(secretSantaTable.id, secretSanta.id));
     console.error('Mail sending failed for', secretSanta.name, secretSanta.id, e);
   }
 }

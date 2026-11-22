@@ -19,6 +19,7 @@ export const user = sqliteTable('user', {
           )`,
     ),
   giftTo: text().references((): AnySQLiteColumn => user.id),
+  mailSentAt: int({ mode: 'timestamp' }),
 	createdAt: int({ mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 

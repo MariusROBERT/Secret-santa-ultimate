@@ -19,14 +19,12 @@ jobs:
     name: Build and run docker image
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
 
-      - name: Generate and track Drizzle migrations
+      - name: Generate Drizzle migrations
         uses: actions/setup-node@v4
         with:
           node-version: 25
@@ -37,20 +35,17 @@ jobs:
         working-directory: svelte
         run: npm ci && npm run db:generate
 
+      - name: Ensure migrations are committed
+        run: |
+          if [ -n "$(git status --porcelain -- svelte/drizzle)" ]; then
+            echo "Drizzle migrations are out of date. Run npm run db:generate and commit the result."
+            git status --short -- svelte/drizzle
+            exit 1
+          fi
+
       - name: Test fresh installs and upgrades
         working-directory: svelte
         run: npm run test:migrations
-
-      - name: Commit generated migrations
-        if: github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add svelte/drizzle
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: generate database migrations"
-            git push
-          fi
 
       - name: Build Docker image
         run: |
