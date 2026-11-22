@@ -7,7 +7,8 @@ export const secretSanta = sqliteTable('secret_santa', {
   id: text().primaryKey().$defaultFn(generateCode),
   name: text().notNull(),
   mailDate: int({ mode: 'timestamp' }).notNull(),
-	createdAt: int({ mode: 'timestamp' }).$defaultFn(() => new Date()),
+  mailStatus: text().notNull().default('pending'),
+  createdAt: int({ mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 export const groupsRelations = relations(secretSanta, ({ many }) => ({

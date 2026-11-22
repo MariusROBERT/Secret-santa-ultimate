@@ -1,6 +1,6 @@
-import { secretSanta, user } from '$lib/db/schema.js';
+import { secretSanta as secretSantaTable, user } from '$lib/db/schema.js';
 import { getDb } from '$lib/db/index.js';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, lte } from 'drizzle-orm';
 import { sendMail } from '$lib/mailer.js';
 import { error } from '@sveltejs/kit';
 
@@ -12,7 +12,7 @@ const db = getDb()
  * @return {Promise<{ id: string, name: string, mailDate: number, users: any[]}>}
  */
 export async function getSecretSanta(code) {
-  let [santa] = await db.select().from(secretSanta).where(eq(secretSanta.id, code));
+  let [santa] = await db.select().from(secretSantaTable).where(eq(secretSantaTable.id, code));
   if (!santa) throw error(404, `Secret santa '${code}' not found`);
 
   const users = await db
@@ -42,7 +42,7 @@ export async function createSecretSanta(name, mailDate) {
   let santa;
   for (let i = 0; i < 10; i++) {
     try {
-      [santa] = await db.insert(secretSanta).values(newSanta).returning();
+      [santa] = await db.insert(secretSantaTable).values(newSanta).returning();
       break;
     } catch (e) {
       console.warn(e);
@@ -139,28 +139,32 @@ export function solveSecretSanta(secretSanta, iteration = 0) {
  *   mailDate: Date
  * }}
  */
-export function sendMails(secretSanta) {
+export async function sendMails(secretSanta) {
+  const [claimed] = await db.update(secretSantaTable).set({ mailStatus: 'sending' })
+    .where(and(eq(secretSantaTable.id, secretSanta.id), eq(secretSantaTable.mailStatus, 'pending'), lte(secretSantaTable.mailDate, new Date())))
+    .returning({ id: secretSantaTable.id });
+  if (!claimed) return;
+
   let solution;
   try {
     solution = solveSecretSanta(secretSanta);
   } catch (e) {
     console.warn(e);
+    await db.update(secretSantaTable).set({ mailStatus: 'failed' }).where(eq(secretSantaTable.id, secretSanta.id));
     return;
   }
 
-  const mailPromises = [];
-  const backupPromises = [];
-  console.log('start');
-  for (const [gifter, giftee] of solution) {
-    console.log(gifter.id, '->', giftee.id);
-    backupPromises.push(db.update(user).set({ giftTo: giftee.id }).where(eq(user.id, gifter.id)));
-    mailPromises.push(sendMail(secretSanta.name, gifter, giftee));
+  try {
+    for (const [gifter, giftee] of solution) {
+      await db.update(user).set({ giftTo: giftee.id }).where(eq(user.id, gifter.id));
+      await sendMail(secretSanta.name, gifter, giftee);
+    }
+    await db.update(secretSantaTable).set({ mailStatus: 'sent' }).where(eq(secretSantaTable.id, secretSanta.id));
+    console.log('Mails sent for', secretSanta.name, secretSanta.id);
+  } catch (e) {
+    await db.update(secretSantaTable).set({ mailStatus: 'failed' }).where(eq(secretSantaTable.id, secretSanta.id));
+    console.error('Mail sending failed for', secretSanta.name, secretSanta.id, e);
   }
-  Promise.all(mailPromises).then(() => console.log('Mails sent for', secretSanta.name));
-  Promise.all(backupPromises).then(() => console.log('Backup done for', secretSanta.name));
-  Promise.all([...mailPromises, ...backupPromises]).then(() =>
-    console.log('All done for', secretSanta.name, secretSanta.id),
-  );
 }
 
 /**
@@ -172,17 +176,20 @@ export function sendMails(secretSanta) {
 export async function updateSecretSanta(id, newData) {
   let filteredData = {};
 
-  if (newData.mailDate && new Date(newData.mailDate) > new Date())
+  if (typeof newData.mailDate === 'number' && Number.isFinite(newData.mailDate) && new Date(newData.mailDate) > new Date()) {
     filteredData.mailDate = new Date(newData.mailDate);
+  }
   if (newData.name && newData.name.trim().length > 0) filteredData.name = newData.name;
 
   if (Object.keys(filteredData).length === 0) throw error(422, 'Invalid new data');
 
   const now = new Date();
   let [updatedSanta] = await db
-    .update(secretSanta)
+    .update(secretSantaTable)
     .set(filteredData)
-    .where(and(eq(secretSanta.id, id), gt(secretSanta.mailDate, now)))
+    .where(filteredData.mailDate
+      ? and(eq(secretSantaTable.id, id), eq(secretSantaTable.mailStatus, 'pending'), gt(secretSantaTable.mailDate, now))
+      : eq(secretSantaTable.id, id))
     .returning();
 
   if (!updatedSanta) throw error(404, `Secret santa '${id}' not found`);

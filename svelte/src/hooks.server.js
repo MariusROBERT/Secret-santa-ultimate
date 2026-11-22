@@ -1,26 +1,21 @@
 import { scheduleJob } from 'node-schedule';
 import { getDb } from '@/db/index.js';
-import { gt, lt } from 'drizzle-orm';
+import { secretSanta } from '@/db/schema.js';
+import { and, eq, lte } from 'drizzle-orm';
 import { sendMails } from '@/db/utils/secretSanta.js';
 
 const db = getDb()
 
-// Everyday at 8AM
-scheduleJob('0 8 * * *', async () => {
-  const today = new Date(new Date().setHours(0, 0, 0, 0));
-  const tomorrow = new Date(Number(today) + 24 * 3_600 * 1_000);
-
-  const todaySecretSanta = await db.query.secretSanta.findMany({
+scheduleJob('*/5 * * * *', async () => {
+  const dueSecretSantas = await db.query.secretSanta.findMany({
     with: {
       users: true,
     },
-    where: (santa, { and }) => and(gt(santa.mailDate, today), lt(santa.mailDate, tomorrow)),
+    where: and(lte(secretSanta.mailDate, new Date()), eq(secretSanta.mailStatus, 'pending')),
   });
 
-  console.log(JSON.stringify(todaySecretSanta));
-
-  for (const secretSanta of todaySecretSanta) {
-    sendMails(secretSanta);
+  for (const secretSanta of dueSecretSantas) {
+    await sendMails(secretSanta);
     console.log('Job started for', secretSanta.name, secretSanta.id);
   }
 });
