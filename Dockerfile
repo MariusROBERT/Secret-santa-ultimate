@@ -1,6 +1,7 @@
 # Build
-FROM node:25-alpine3.22 AS builder
+FROM node:24-alpine3.22 AS builder
 WORKDIR /app
+RUN		mkdir -p data
 
 COPY svelte/package.json svelte/package-lock.json ./
 RUN npm ci
@@ -8,7 +9,7 @@ COPY svelte .
 RUN mkdir -p /app/data && npm run build
 
 # Run
-FROM node:25-alpine3.22
+FROM node:24-alpine3.22
 WORKDIR /app
 
 COPY --from=builder /app/build ./build
