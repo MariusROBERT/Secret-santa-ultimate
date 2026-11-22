@@ -5,7 +5,7 @@ WORKDIR /app
 COPY svelte/package.json svelte/package-lock.json ./
 RUN npm ci
 COPY svelte .
-RUN npm run build
+RUN mkdir -p /app/data && npm run build
 
 # Run
 FROM node:25-alpine3.22
