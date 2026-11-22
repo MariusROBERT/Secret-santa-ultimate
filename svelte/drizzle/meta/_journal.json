@@ -5,8 +5,8 @@
 		{
 			"idx": 0,
 			"version": "7",
-			"when": 1795392000000,
-			"tag": "0001_scheduling_timezone",
+			"when": 1795359984450,
+			"tag": "0000_initial_schema",
 			"breakpoints": true
 		}
 	]

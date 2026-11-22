@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "prebuild": "npm run db:generate",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
@@ -16,7 +17,8 @@
     "test": "npm run test:unit -- --run",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node migrate.js",
+    "test:migrations": "node test-migrations.js",
     "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
