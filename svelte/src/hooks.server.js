@@ -1,26 +1,32 @@
 import { scheduleJob } from 'node-schedule';
 import { getDb } from '@/db/index.js';
-import { gt, lt } from 'drizzle-orm';
-import { sendMails } from '@/db/utils/secretSanta.js';
+import { secretSanta } from '@/db/schema.js';
+import { and, eq, lte, or } from 'drizzle-orm';
+import { MAIL_LEASE_MS, MAIL_RETRY_DELAY_MS, sendMails } from '@/db/utils/secretSanta.js';
 
-const db = getDb()
+const db = getDb();
 
-// Everyday at 8AM
-scheduleJob('0 8 * * *', async () => {
-  const today = new Date(new Date().setHours(0, 0, 0, 0));
-  const tomorrow = new Date(Number(today) + 24 * 3_600 * 1_000);
+scheduleJob('*/5 * * * *', async () => {
+  const now = new Date();
+  const leaseExpiredAt = new Date(now.getTime() - MAIL_LEASE_MS);
+  const retryAfter = new Date(now.getTime() - MAIL_RETRY_DELAY_MS);
 
-  const todaySecretSanta = await db.query.secretSanta.findMany({
-    with: {
-      users: true,
-    },
-    where: (santa, { and }) => and(gt(santa.mailDate, today), lt(santa.mailDate, tomorrow)),
+  const dueSecretSantas = await db.query.secretSanta.findMany({
+    where: and(
+      lte(secretSanta.mailDate, now),
+      or(
+        eq(secretSanta.mailStatus, 'pending'),
+        and(eq(secretSanta.mailStatus, 'failed'), lte(secretSanta.mailStartedAt, retryAfter)),
+        and(
+          eq(secretSanta.mailStatus, 'sending'),
+          lte(secretSanta.mailStartedAt, leaseExpiredAt),
+        ),
+      ),
+    ),
   });
 
-  console.log(JSON.stringify(todaySecretSanta));
-
-  for (const secretSanta of todaySecretSanta) {
-    sendMails(secretSanta);
+  for (const secretSanta of dueSecretSantas) {
+    await sendMails(secretSanta);
     console.log('Job started for', secretSanta.name, secretSanta.id);
   }
 });

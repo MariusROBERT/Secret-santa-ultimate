@@ -1,34 +1,24 @@
 # Build
-FROM	node:25-alpine3.22 AS builder
-WORKDIR	/app
-RUN		mkdir -p data
+FROM node:25-alpine3.22 AS builder
+WORKDIR /app
 
-COPY	svelte/package.json .
-COPY	svelte/package-lock.json .
-RUN		npm install
-COPY	svelte .
-RUN		npm run build
-
-RUN		npm run db:generate
-RUN		npm run db:migrate
-
+COPY svelte/package.json svelte/package-lock.json ./
+RUN npm ci
+COPY svelte .
+RUN mkdir -p /app/data && npm run build
 
 # Run
-FROM	node:25-alpine3.22
-WORKDIR	/app
+FROM node:25-alpine3.22
+WORKDIR /app
 
-COPY	--from=builder /app/build /app/build
-COPY	svelte/package*.json /app
-RUN		npm install --omit=dev
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/migrate.js ./migrate.js
+COPY svelte/package.json svelte/package-lock.json ./
+RUN npm ci --omit=dev && mkdir -p /app/data
 
-COPY	svelte/drizzle.config.js .
+VOLUME ["/app/data"]
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -qO- --tries=1 --spider http://127.0.0.1:3000/api/v1/health || exit 1
 
-RUN		mkdir -p /app/data /db_init
-VOLUME	["/app/data"]
-COPY	--from=builder /app/data/secretSantaUltimate.sql /db_init
-
-HEALTHCHECK	--interval=30s --timeout=3s \
-	CMD	wget -qO- --tries=1 --spider http://127.0.0.1:3000/api/v1/health || exit 1
-
-
-CMD		["sh", "-c", "cp -n /db_init/secretSantaUltimate.sql /app/data && node /app/build/index.js"]
+CMD ["sh", "-c", "npm run db:migrate && node /app/build/index.js"]

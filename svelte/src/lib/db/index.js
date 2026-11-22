@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import * as schema from './schema.js';
 
-const client = createClient({ url: 'file:data/secretSantaUltimate.sql' });
+const client = createClient({ url: process.env.DATABASE_URL ?? 'file:data/secretSantaUltimate.sql' });
 
 let db;
 

@@ -10,7 +10,7 @@ import { createSecretSanta } from '$lib/db/utils/secretSanta.js';
  */
 export async function POST({ request }) {
   const { name, date } = await request.json();
-  if (!name || !date) throw error(422, { message: 'missing fields' });
+  if (!name || !Number.isFinite(date)) throw error(422, { message: 'missing fields' });
 
   const santa = await createSecretSanta(name, new Date(date));
 

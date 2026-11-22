@@ -24,6 +24,29 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v5
 
+      - name: Generate Drizzle migrations
+        uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: npm
+          cache-dependency-path: svelte/package-lock.json
+
+      - name: Generate migrations
+        working-directory: svelte
+        run: npm ci && npm run db:generate
+
+      - name: Ensure migrations are committed
+        run: |
+          if [ -n "$(git status --porcelain -- svelte/drizzle)" ]; then
+            echo "Drizzle migrations are out of date. Run npm run db:generate and commit the result."
+            git status --short -- svelte/drizzle
+            exit 1
+          fi
+
+      - name: Test fresh installs and upgrades
+        working-directory: svelte
+        run: npm run test:migrations
+
       - name: Build Docker image
         run: |
           docker build -t secret-santa-ultimate:${{ github.run_id }} .
@@ -46,7 +69,7 @@ jobs:
             fi
       
             if [ "$STATUS" = "unhealthy" ]; then
-              docker logs my-app
+              docker logs secret-santa-ultimate
               exit 1
             fi
       
@@ -54,6 +77,9 @@ jobs:
               sleep $INTERVAL
             fi
           done
+
+          docker logs secret-santa-ultimate
+          exit 1
 
       - name: Cleanup image
         if: always()

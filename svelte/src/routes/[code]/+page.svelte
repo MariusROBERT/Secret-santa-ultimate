@@ -22,7 +22,8 @@
   let { data } = $props();
 
   let users = $state(data.users);
-  let mailDate = $state(fromDate(new Date(data.mailDate)));
+  let initialMailDate = fromDate(new Date(data.mailDate), getLocalTimeZone());
+  let mailDate = $state(initialMailDate);
   let name = $state(data.name);
   /**@type {'edit' | 'view'}*/
   let mode = $state('view');
@@ -85,18 +86,22 @@
   }
 
   let timer = $state();
-  let originalMailDate = $state(mailDate);
+  let originalMailDate = $state(initialMailDate);
 
   function updateMailDate() {
     // Debounced value
     clearTimeout(timer);
     timer = setTimeout(() => {
-      if (Number(originalMailDate.toDate(getLocalTimeZone())) === Number(mailDate.toDate(getLocalTimeZone())))
+      if (originalMailDate.toString() === mailDate.toString())
         return;
       fetch(`/api/v1/santa/${code}`, {
         method: 'PATCH',
-        body: JSON.stringify({ mailDate: Number(mailDate.toDate(getLocalTimeZone())) }),
-      }).then(() => originalMailDate = mailDate);
+        body: JSON.stringify({
+          mailDate: mailDate.toDate(getLocalTimeZone()).setHours(8, 0, 0, 0),
+        }),
+      }).then((response) => {
+        if (response.ok) originalMailDate = mailDate;
+      });
     }, 750);
   }
 
