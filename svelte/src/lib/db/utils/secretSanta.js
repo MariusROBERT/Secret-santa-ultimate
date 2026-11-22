@@ -4,7 +4,7 @@ import { and, eq, gt, lte } from 'drizzle-orm';
 import { sendMail } from '$lib/mailer.js';
 import { error } from '@sveltejs/kit';
 
-const db = getDb()
+const db = getDb();
 
 /**
  * Get secretSanta data from its code/id
@@ -66,78 +66,105 @@ export async function addUsers(santaId, email, name) {
   return newUser;
 }
 
+/** Thrown when no full assignment satisfies the group's constraints. */
+export class UnsatisfiableSecretSantaError extends Error {
+  /** @param {{ name: string, id: string }} secretSanta */
+  constructor(secretSanta) {
+    super(`No valid Secret Santa assignment for ${secretSanta.name} (${secretSanta.id})`);
+    this.name = 'UnsatisfiableSecretSantaError';
+  }
+}
+
+/** @typedef {{ id: string, name: string, email: string, forbidden?: string[] }} SecretSantaUser */
+
+/** @template T @param {T[]} items @returns {T[]} */
+function shuffle(items) {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 /**
- * Generate a map of <User, User> following the forbidden rules and the 1v1 rule
- * @param secretSanta {{
- *   id: string,
- *   name: string,
- *   users: {
- *     id: string,
- *     name: string,
- *     email: string,
- *     forbidden: string[]
- *   }[],
- *   mailDate: Date
- * }}
- * @param iteration {number}
- * @returns {Map<{
- *     id: string,
- *     name: string,
- *     email: string,
- *     giftTo: string,
- *     forbidden: string[]
- *   }, {
- *     id: string,
- *     name: string,
- *     email: string,
- *     giftTo: string,
- *     forbidden: string[]
- *   }>}
+ * @param {SecretSantaUser} giver
+ * @param {SecretSantaUser[]} users
+ * @param {Map<SecretSantaUser, SecretSantaUser>} assignments
+ * @param {Set<string>} recipients
+ * @returns {SecretSantaUser[]}
  */
-export function solveSecretSanta(secretSanta, iteration = 0) {
-  if (iteration > 1000) {
-    // If we can't find a solution after 10000 iterations, give up
-    throw `Unable to find solution for ${secretSanta.name} (${secretSanta.id})`;
-  }
-  const remainingGiftees = [...secretSanta.users];
-  const secretSantaMap = new Map();
-
-  for (const user of secretSanta.users) {
-    const availableGiftees = remainingGiftees.filter(
-      (giftee) =>
-        giftee.id !== user.id &&
-        (!user.forbidden || !user.forbidden.includes(giftee.id)) &&
-        secretSantaMap.get(giftee) !== user,
-    );
-
-    if (availableGiftees.length === 0) {
-      // If there are no suitable giftees, start over
-      return solveSecretSanta(secretSanta, iteration + 1);
+function getAvailableRecipients(giver, users, assignments, recipients) {
+  const available = [];
+  for (const giftee of users) {
+    if (
+      recipients.has(giftee.id) ||
+      giftee.id === giver.id ||
+      giver.forbidden?.includes(giftee.id) ||
+      assignments.get(giftee) === giver
+    ) {
+      continue;
     }
+    available.push(giftee);
+  }
+  return available;
+}
 
-    const randomIndex = Math.floor(Math.random() * availableGiftees.length);
-    const selectedGiftee = availableGiftees[randomIndex];
+/**
+ * @param {SecretSantaUser[]} users
+ * @param {Map<SecretSantaUser, SecretSantaUser>} assignments
+ * @param {Set<string>} recipients
+ * @returns {boolean}
+ */
+function searchAssignment(users, assignments, recipients) {
+  if (assignments.size === users.length) return true;
 
-    secretSantaMap.set(user, selectedGiftee);
-    remainingGiftees.splice(remainingGiftees.indexOf(selectedGiftee), 1);
+  /** @type {SecretSantaUser | undefined} */
+  let mostConstrained;
+  /** @type {SecretSantaUser[]} */
+  let options = [];
+
+  for (const giver of users) {
+    if (assignments.has(giver)) continue;
+
+    const available = getAvailableRecipients(giver, users, assignments, recipients);
+    if (available.length === 0) return false;
+    if (!mostConstrained || available.length < options.length) {
+      mostConstrained = giver;
+      options = available;
+    }
   }
 
-  return secretSantaMap;
+  if (!mostConstrained) return false;
+  for (const giftee of shuffle(options)) {
+    assignments.set(mostConstrained, giftee);
+    recipients.add(giftee.id);
+    if (searchAssignment(users, assignments, recipients)) return true;
+    assignments.delete(mostConstrained);
+    recipients.delete(giftee.id);
+  }
+  return false;
+}
+
+/**
+ * Generate a complete assignment with unique recipients, no self-gifts,
+ * forbidden-recipient exclusions, and no reciprocal pairs.
+ * @param {{ id: string, name: string, users: SecretSantaUser[] }} secretSanta - Group to assign.
+ * @returns {Map<SecretSantaUser, SecretSantaUser>}
+ * @throws {UnsatisfiableSecretSantaError} If no valid complete assignment exists.
+ */
+export function solveSecretSanta(secretSanta) {
+  const assignments = new Map();
+  const recipients = new Set();
+  if (!searchAssignment(secretSanta.users, assignments, recipients))
+    throw new UnsatisfiableSecretSantaError(secretSanta);
+  return assignments;
 }
 
 /**
  * Send mail to every user of the secretSanta
- * @param secretSanta {{
- *   id: string,
- *   name: string,
- *   users: {
- *     id: string,
- *     name: string,
- *     email: string,
- *     forbidden: string[]
- *   }[],
- *   mailDate: Date
- * }}
+ * @param {{ id: string, name: string, users: SecretSantaUser[] }} secretSanta
+ * @returns {Promise<void>} Returns without side effects when the constraints are unsatisfiable.
  */
 export async function sendMails(secretSanta) {
   const [claimed] = await db.update(secretSantaTable).set({ mailStatus: 'sending' })
@@ -150,6 +177,10 @@ export async function sendMails(secretSanta) {
     solution = solveSecretSanta(secretSanta);
   } catch (e) {
     console.warn(e);
+    if (e instanceof UnsatisfiableSecretSantaError) {
+      await db.update(secretSantaTable).set({ mailStatus: 'impossible' }).where(eq(secretSantaTable.id, secretSanta.id));
+      return;
+    }
     await db.update(secretSantaTable).set({ mailStatus: 'failed' }).where(eq(secretSantaTable.id, secretSanta.id));
     return;
   }
