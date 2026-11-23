@@ -1,15 +1,15 @@
-import { CalendarDateTime, fromDate, getLocalTimeZone, toCalendarDate } from '@internationalized/date';
+import {
+  CalendarDateTime,
+  fromDate,
+  getLocalTimeZone,
+  toCalendarDate,
+} from '@internationalized/date';
 
 /** @param {import('@internationalized/date').AnyCalendarDate} date @param {string} [timeZone] */
 export function getDrawingInstant(date, timeZone = getLocalTimeZone()) {
-  return new CalendarDateTime(
-    date.calendar,
-    date.era,
-    date.year,
-    date.month,
-    date.day,
-    8,
-  ).toDate(timeZone).getTime();
+  return new CalendarDateTime(date.calendar, date.era, date.year, date.month, date.day, 8)
+    .toDate(timeZone)
+    .getTime();
 }
 
 /** @param {Date} [now] @param {string} [timeZone] */

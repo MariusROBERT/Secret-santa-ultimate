@@ -7,7 +7,11 @@
   import { Button } from '$lib/components/ui/button';
   import { Label } from '$lib/components/ui/label';
   import { goto } from '$app/navigation';
-  import { getEarliestDrawingDate, getDrawingInstant, isFutureDrawingInstant } from '$lib/santaSchedule.js';
+  import {
+    getEarliestDrawingDate,
+    getDrawingInstant,
+    isFutureDrawingInstant,
+  } from '$lib/santaSchedule.js';
 
   let name: string = $state('');
   let now = $state(new Date());
@@ -18,7 +22,7 @@
   let isCalendarPopoverOpen = $state(false);
 
   onMount(() => {
-    const interval = setInterval(() => now = new Date(), 15_000);
+    const interval = setInterval(() => (now = new Date()), 15_000);
     return () => clearInterval(interval);
   });
 
@@ -26,7 +30,6 @@
     now = new Date();
     if (!isFutureDrawingInstant(formattedMailDate, now.getTime())) {
       errorMessage = 'Choose a drawing date in the future.';
-      mailDate = getEarliestDrawingDate(now);
       return;
     }
 
@@ -47,8 +50,7 @@
   }
 </script>
 
-<div class="flex justify-evenly flex-col gap-3 mt-4">
-
+<div class="mt-4 flex flex-col justify-evenly gap-3">
   <div class="flex flex-col gap-2">
     <Label for="name">Name</Label>
     <Input class="text-black" bind:value={name} placeHolder="Family Doe" id="name" />
@@ -58,7 +60,7 @@
     <Label for="mailDate">Mail sending date</Label>
     <Button
       variant="outline"
-      class="w-full text-black justify-between font-normal"
+      class="w-full justify-between font-normal text-black"
       id="mailDate"
       onclick={() => {
         now = new Date();
@@ -69,7 +71,7 @@
     </Button>
     <Popover.Root bind:open={isCalendarPopoverOpen}>
       <Popover.Trigger />
-      <Popover.Content class="w-auto mx-auto overflow-hidden p-0" align="start">
+      <Popover.Content class="mx-auto w-auto overflow-hidden p-0" align="start">
         <Calendar
           type="single"
           bind:value={mailDate}
@@ -87,12 +89,7 @@
     <p class="text-sm text-destructive" role="alert">{errorMessage}</p>
   {/if}
 
-  <div class="w-full justify-end flex">
-    <Button
-      disabled={!name.length}
-      onclick={createSecretSanta}
-    >
-      Create
-    </Button>
+  <div class="flex w-full justify-end">
+    <Button disabled={!name.length} onclick={createSecretSanta}>Create</Button>
   </div>
 </div>
