@@ -1,6 +1,6 @@
 import { secretSanta as secretSantaTable, user } from '$lib/db/schema.js';
 import { getDb } from '$lib/db/index.js';
-import { and, eq, gt, lte, or } from 'drizzle-orm';
+import { and, eq, gt, lte, or, sql } from 'drizzle-orm';
 import { sendMail } from '$lib/mailer.js';
 import { error } from '@sveltejs/kit';
 
@@ -64,7 +64,36 @@ export async function createSecretSanta(name, mailDate) {
  * @returns {Promise<object>}
  */
 export async function addUsers(santaId, email, name) {
-  let [newUser] = await db.insert(user).values({ secretSanta: santaId, email, name }).returning();
+  const now = new Date();
+  let [newUser] = await db
+    .insert(user)
+    .select(
+      db
+        .select({
+          id: sql`${crypto.randomUUID()}`,
+          name: sql`${name}`,
+          email: sql`${email}`,
+          secretSanta: secretSantaTable.id,
+        })
+        .from(secretSantaTable)
+        .where(
+          and(
+            eq(secretSantaTable.id, santaId),
+            eq(secretSantaTable.mailStatus, 'pending'),
+            gt(secretSantaTable.mailDate, now),
+          ),
+        )
+        .limit(1),
+    )
+    .returning();
+  if (!newUser) {
+    const [santa] = await db
+      .select({ id: secretSantaTable.id })
+      .from(secretSantaTable)
+      .where(eq(secretSantaTable.id, santaId));
+    if (!santa) throw error(404, `Secret santa '${santaId}' not found`);
+    throw error(409, 'Secret santa registration is closed');
+  }
   return newUser;
 }
 
