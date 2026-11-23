@@ -1,26 +1,49 @@
 <script lang="ts">
-  import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
+  import { onMount } from 'svelte';
+  import { getLocalTimeZone } from '@internationalized/date';
   import { Input } from '$lib/components/ui/input';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { Calendar } from '$lib/components/ui/calendar';
   import { Button } from '$lib/components/ui/button';
   import { Label } from '$lib/components/ui/label';
   import { goto } from '$app/navigation';
+  import { getEarliestDrawingDate, getDrawingInstant, isFutureDrawingInstant } from '$lib/santaSchedule.js';
 
   let name: string = $state('');
-  let mailDate: CalendarDate = $state(today(getLocalTimeZone()).add({ weeks: 1 }));
-  let formattedMailDate = $derived(mailDate.toDate(getLocalTimeZone()).setHours(8, 0, 0, 0));
+  let now = $state(new Date());
+  let mailDate = $state(getEarliestDrawingDate());
+  let formattedMailDate = $derived(getDrawingInstant(mailDate));
+  let errorMessage = $state('');
 
   let isCalendarPopoverOpen = $state(false);
 
-  function createSecretSanta() {
-    fetch('/api/v1/santa', {
+  onMount(() => {
+    const interval = setInterval(() => now = new Date(), 15_000);
+    return () => clearInterval(interval);
+  });
+
+  async function createSecretSanta() {
+    now = new Date();
+    if (!isFutureDrawingInstant(formattedMailDate, now.getTime())) {
+      errorMessage = 'Choose a drawing date in the future.';
+      mailDate = getEarliestDrawingDate(now);
+      return;
+    }
+
+    errorMessage = '';
+    const response = await fetch('/api/v1/santa', {
       method: 'POST',
       body: JSON.stringify({
         name: name,
         date: formattedMailDate,
       }),
-    }).then((r) => r.json()).then(({ code }) => goto(`/${code}`));
+    });
+    if (!response.ok) {
+      errorMessage = 'Choose a drawing date in the future.';
+      return;
+    }
+    const { code } = await response.json();
+    goto(`/${code}`);
   }
 </script>
 
@@ -37,7 +60,10 @@
       variant="outline"
       class="w-full text-black justify-between font-normal"
       id="mailDate"
-      onclick={() => isCalendarPopoverOpen = !isCalendarPopoverOpen}
+      onclick={() => {
+        now = new Date();
+        isCalendarPopoverOpen = !isCalendarPopoverOpen;
+      }}
     >
       {mailDate.toDate(getLocalTimeZone()).toLocaleDateString()}
     </Button>
@@ -51,11 +77,15 @@
           onValueChange={() => {
             isCalendarPopoverOpen = false;
           }}
-          minValue={today(getLocalTimeZone())}
+          minValue={getEarliestDrawingDate(now)}
         />
       </Popover.Content>
     </Popover.Root>
   </div>
+
+  {#if errorMessage}
+    <p class="text-sm text-destructive" role="alert">{errorMessage}</p>
+  {/if}
 
   <div class="w-full justify-end flex">
     <Button
