@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { createSecretSanta } from '$lib/db/utils/secretSanta.js';
+import { isFutureDrawingInstant } from '$lib/santaSchedule.js';
 
 /**@typedef {import('@sveltejs/kit').RequestEvent} RequestEvent*/
 
@@ -10,7 +11,10 @@ import { createSecretSanta } from '$lib/db/utils/secretSanta.js';
  */
 export async function POST({ request }) {
   const { name, date } = await request.json();
-  if (!name || !Number.isFinite(date)) throw error(422, { message: 'missing fields' });
+  if (!name) throw error(422, { message: 'missing fields' });
+  if (!isFutureDrawingInstant(date)) {
+    throw error(400, { message: 'Drawing date must be in the future.' });
+  }
 
   const santa = await createSecretSanta(name, new Date(date));
 
