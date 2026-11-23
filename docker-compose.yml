@@ -6,10 +6,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3002:3000"
+    environment:
+      EMAIL_ADDRESS: ${EMAIL_ADDRESS:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_SMTP: ${EMAIL_SMTP:-}
+      EMAIL_PORT: ${EMAIL_PORT:-}
     volumes:
       - santa-db:/app/data
     restart: always
 
 volumes:
   santa-db:
-

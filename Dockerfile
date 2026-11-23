@@ -18,6 +18,7 @@ COPY --from=builder /app/migrate.js ./migrate.js
 COPY svelte/package.json svelte/package-lock.json ./
 RUN npm ci --omit=dev && mkdir -p /app/data
 
+EXPOSE 3000
 VOLUME ["/app/data"]
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD wget -qO- --tries=1 --spider http://127.0.0.1:3000/api/v1/health || exit 1
