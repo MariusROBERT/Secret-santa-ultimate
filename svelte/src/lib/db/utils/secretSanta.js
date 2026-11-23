@@ -65,27 +65,14 @@ export async function createSecretSanta(name, mailDate) {
  */
 export async function addUsers(santaId, email, name) {
   const now = new Date();
-  let [newUser] = await db
-    .insert(user)
-    .select(
-      db
-        .select({
-          id: sql`${crypto.randomUUID()}`,
-          name: sql`${name}`,
-          email: sql`${email}`,
-          secretSanta: secretSantaTable.id,
-        })
-        .from(secretSantaTable)
-        .where(
-          and(
-            eq(secretSantaTable.id, santaId),
-            eq(secretSantaTable.mailStatus, 'pending'),
-            gt(secretSantaTable.mailDate, now),
-          ),
-        )
-        .limit(1),
-    )
-    .returning();
+  const userId = crypto.randomUUID();
+  await db.run(sql`INSERT INTO "user" (id, name, email, secret_santa, created_at)
+    SELECT ${userId}, ${name}, ${email}, ${santaId}, ${Math.floor(now.getTime() / 1000)}
+    WHERE EXISTS (
+      SELECT 1 FROM secret_santa
+      WHERE id = ${santaId} AND mail_status = 'pending' AND mail_date > ${Math.floor(now.getTime() / 1000)}
+    )`);
+  const [newUser] = await db.select().from(user).where(eq(user.id, userId));
   if (!newUser) {
     const [santa] = await db
       .select({ id: secretSantaTable.id })
