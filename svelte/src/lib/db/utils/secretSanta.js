@@ -1,6 +1,6 @@
 import { secretSanta as secretSantaTable, user } from '$lib/db/schema.js';
 import { getDb } from '$lib/db/index.js';
-import { and, eq, gt, lte, or } from 'drizzle-orm';
+import { and, eq, gt, lte, or, sql } from 'drizzle-orm';
 import { sendMail } from '$lib/mailer.js';
 import { error } from '@sveltejs/kit';
 
@@ -64,7 +64,23 @@ export async function createSecretSanta(name, mailDate) {
  * @returns {Promise<object>}
  */
 export async function addUsers(santaId, email, name) {
-  let [newUser] = await db.insert(user).values({ secretSanta: santaId, email, name }).returning();
+  const now = new Date();
+  const userId = crypto.randomUUID();
+  await db.run(sql`INSERT INTO "user" (id, name, email, secret_santa, created_at)
+    SELECT ${userId}, ${name}, ${email}, ${santaId}, ${Math.floor(now.getTime() / 1000)}
+    WHERE EXISTS (
+      SELECT 1 FROM secret_santa
+      WHERE id = ${santaId} AND mail_status = 'pending' AND mail_date > ${Math.floor(now.getTime() / 1000)}
+    )`);
+  const [newUser] = await db.select().from(user).where(eq(user.id, userId));
+  if (!newUser) {
+    const [santa] = await db
+      .select({ id: secretSantaTable.id })
+      .from(secretSantaTable)
+      .where(eq(secretSantaTable.id, santaId));
+    if (!santa) throw error(404, `Secret santa '${santaId}' not found`);
+    throw error(409, 'Secret santa registration is closed');
+  }
   return newUser;
 }
 
@@ -272,7 +288,11 @@ export async function sendMails(secretSanta) {
 export async function updateSecretSanta(id, newData) {
   let filteredData = {};
 
-  if (typeof newData.mailDate === 'number' && Number.isFinite(newData.mailDate) && new Date(newData.mailDate) > new Date()) {
+  if (
+    typeof newData.mailDate === 'number' &&
+    Number.isFinite(newData.mailDate) &&
+    new Date(newData.mailDate) > new Date()
+  ) {
     filteredData.mailDate = new Date(newData.mailDate);
   }
   if (newData.name && newData.name.trim().length > 0) filteredData.name = newData.name;
@@ -283,9 +303,15 @@ export async function updateSecretSanta(id, newData) {
   let [updatedSanta] = await db
     .update(secretSantaTable)
     .set(filteredData)
-    .where(filteredData.mailDate
-      ? and(eq(secretSantaTable.id, id), eq(secretSantaTable.mailStatus, 'pending'), gt(secretSantaTable.mailDate, now))
-      : eq(secretSantaTable.id, id))
+    .where(
+      filteredData.mailDate
+        ? and(
+            eq(secretSantaTable.id, id),
+            eq(secretSantaTable.mailStatus, 'pending'),
+            gt(secretSantaTable.mailDate, now),
+          )
+        : eq(secretSantaTable.id, id),
+    )
     .returning();
 
   if (!updatedSanta) throw error(404, `Secret santa '${id}' not found`);
