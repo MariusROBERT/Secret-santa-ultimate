@@ -288,7 +288,11 @@ export async function sendMails(secretSanta) {
 export async function updateSecretSanta(id, newData) {
   let filteredData = {};
 
-  if (typeof newData.mailDate === 'number' && Number.isFinite(newData.mailDate) && new Date(newData.mailDate) > new Date()) {
+  if (
+    typeof newData.mailDate === 'number' &&
+    Number.isFinite(newData.mailDate) &&
+    new Date(newData.mailDate) > new Date()
+  ) {
     filteredData.mailDate = new Date(newData.mailDate);
   }
   if (newData.name && newData.name.trim().length > 0) filteredData.name = newData.name;
@@ -299,9 +303,15 @@ export async function updateSecretSanta(id, newData) {
   let [updatedSanta] = await db
     .update(secretSantaTable)
     .set(filteredData)
-    .where(filteredData.mailDate
-      ? and(eq(secretSantaTable.id, id), eq(secretSantaTable.mailStatus, 'pending'), gt(secretSantaTable.mailDate, now))
-      : eq(secretSantaTable.id, id))
+    .where(
+      filteredData.mailDate
+        ? and(
+            eq(secretSantaTable.id, id),
+            eq(secretSantaTable.mailStatus, 'pending'),
+            gt(secretSantaTable.mailDate, now),
+          )
+        : eq(secretSantaTable.id, id),
+    )
     .returning();
 
   if (!updatedSanta) throw error(404, `Secret santa '${id}' not found`);

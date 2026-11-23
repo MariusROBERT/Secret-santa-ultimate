@@ -29,9 +29,15 @@ beforeEach(async () => {
 });
 
 async function createEvent(mailDate = new Date(Date.now() + 60_000), mailStatus = 'pending') {
-  const [event] = await db.insert(secretSanta).values({
-    id: crypto.randomUUID(), name: 'Test event', mailDate, mailStatus,
-  }).returning();
+  const [event] = await db
+    .insert(secretSanta)
+    .values({
+      id: crypto.randomUUID(),
+      name: 'Test event',
+      mailDate,
+      mailStatus,
+    })
+    .returning();
   return event;
 }
 
@@ -41,13 +47,19 @@ describe('participant registration', () => {
 
     const participant = await addUsers(event.id, 'one@example.com', 'One');
 
-    expect(participant).toMatchObject({ secretSanta: event.id, email: 'one@example.com', name: 'One' });
+    expect(participant).toMatchObject({
+      secretSanta: event.id,
+      email: 'one@example.com',
+      name: 'One',
+    });
   });
 
   it('rejects registration after the scheduled drawing without inserting a participant', async () => {
     const event = await createEvent(new Date(Date.now() - 60_000));
 
-    await expect(addUsers(event.id, 'one@example.com', 'One')).rejects.toMatchObject({ status: 409 });
+    await expect(addUsers(event.id, 'one@example.com', 'One')).rejects.toMatchObject({
+      status: 409,
+    });
     expect(await db.select().from(user)).toHaveLength(0);
   });
 
@@ -55,18 +67,25 @@ describe('participant registration', () => {
     const event = await createEvent(new Date(Date.now() - 60_000));
     for (const [index, name] of ['One', 'Two', 'Three'].entries()) {
       await db.insert(user).values({
-        id: `participant-${index}`, secretSanta: event.id, email: `${name}@example.com`, name,
+        id: `participant-${index}`,
+        secretSanta: event.id,
+        email: `${name}@example.com`,
+        name,
       });
     }
     await sendMails({ ...event, mailStatus: 'pending', users: [] });
 
-    await expect(addUsers(event.id, 'late@example.com', 'Late')).rejects.toMatchObject({ status: 409 });
+    await expect(addUsers(event.id, 'late@example.com', 'Late')).rejects.toMatchObject({
+      status: 409,
+    });
     expect(await db.select().from(user)).toHaveLength(3);
     expect((await db.select().from(user)).every(({ giftTo }) => giftTo)).toBe(true);
   });
 
   it('returns 404 when the event does not exist', async () => {
-    await expect(addUsers('missing', 'one@example.com', 'One')).rejects.toMatchObject({ status: 404 });
+    await expect(addUsers('missing', 'one@example.com', 'One')).rejects.toMatchObject({
+      status: 404,
+    });
     expect(await db.select().from(user)).toHaveLength(0);
   });
 
@@ -74,7 +93,10 @@ describe('participant registration', () => {
     const event = await createEvent(new Date(Date.now() - 60_000));
     for (const [index, name] of ['One', 'Two', 'Three'].entries()) {
       await db.insert(user).values({
-        id: `concurrent-${index}`, secretSanta: event.id, email: `${name}@example.com`, name,
+        id: `concurrent-${index}`,
+        secretSanta: event.id,
+        email: `${name}@example.com`,
+        name,
       });
     }
 
